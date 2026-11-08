@@ -77,6 +77,105 @@ class MainController extends Controller
         return view('download.youtube-video', $data);
     }
 
+    public function processDownload(Request $request)
+    {
+        $url = $request->query('url');
+        $type = $request->query('type', 'video');
+        $height = intval($request->query('height', 720));
+        $title = $request->query('title', 'video');
+
+        if (!$url) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Video URL is required.'
+            ], 400);
+        }
+
+        // SSRF guard
+        list($isSafe, $riskReason) = SsrfProtectionService::validateUrl($url);
+        if (!$isSafe) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Security check failed: ' . $riskReason
+            ], 400);
+        }
+
+        set_time_limit(0);
+
+        $filePath = $this->downloader->mergeAndCreateFile($url, $type, $height);
+        if (!$filePath || !file_exists($filePath)) {
+            $lastErr = $this->downloader->getLastError();
+            return response()->json([
+                'success' => false,
+                'message' => !empty($lastErr) ? $lastErr : 'Failed to process media file. Please try another quality or use Fast Direct Stream.'
+            ], 500);
+        }
+
+        $cleanTitle = preg_replace('/[^A-Za-z0-9_\-\. ]/', '_', $title);
+        $cleanTitle = trim(preg_replace('/\s+/', ' ', (string)$cleanTitle)) ?: 'video';
+        $ext = ($type === 'audio') ? 'mp3' : 'mp4';
+        $filename = $cleanTitle . '.' . $ext;
+        $hash = basename($filePath, '.' . $ext);
+        $sizeBytes = filesize($filePath);
+        $sizeFormatted = ($sizeBytes > 0) ? round($sizeBytes / (1024 * 1024), 1) . ' MB' : 'Ready';
+
+        // Log download activity
+        try {
+            \App\DownloadLog::create([
+                'video_url' => $url,
+                'video_title' => $title,
+                'format_label' => ($type === 'audio') ? 'MP3 Audio' : ($height . 'p MP4'),
+                'type' => $type,
+                'height' => ($type === 'audio') ? 0 : $height,
+                'ip_address' => $request->ip(),
+                'user_agent' => substr($request->userAgent() ?? '', 0, 500)
+            ]);
+        } catch (\Exception $e) {}
+
+        $downloadUrl = url('download/file-ready?hash=' . urlencode($hash) . '&ext=' . $ext . '&filename=' . urlencode($filename));
+
+        return response()->json([
+            'success' => true,
+            'download_url' => $downloadUrl,
+            'filename' => $filename,
+            'filesize' => $sizeFormatted,
+            'hash' => $hash,
+            'message' => 'File prepared successfully.'
+        ]);
+    }
+
+    public function downloadReadyFile(Request $request)
+    {
+        $hash = $request->query('hash');
+        $ext = strtolower($request->query('ext', 'mp4'));
+        $filename = $request->query('filename', 'video.' . $ext);
+
+        // Security check on hash and extension
+        if (!preg_match('/^[a-f0-9]{32}$/', (string)$hash) || !in_array($ext, ['mp4', 'mp3', 'm4a', 'webm'])) {
+            return redirect('/')->withErrors(["Invalid download token."]);
+        }
+
+        $filePath = storage_path('app/downloads/' . $hash . '.' . $ext);
+        if (!file_exists($filePath)) {
+            return redirect('/')->withErrors(["The requested file has expired or was removed. Please click download again to re-generate it."]);
+        }
+
+        $cleanFilename = preg_replace('/[^A-Za-z0-9_\-\. ]/', '_', (string)$filename);
+
+        if (ob_get_level()) {
+            ob_end_clean();
+        }
+
+        $headers = [
+            'Content-Type' => ($ext === 'mp3' || $ext === 'm4a') ? 'audio/mpeg' : 'video/mp4',
+            'Accept-Ranges' => 'bytes',
+            'Content-Length' => (string) filesize($filePath),
+            'Cache-Control' => 'no-cache, must-revalidate',
+        ];
+
+        return response()->download($filePath, $cleanFilename, $headers);
+    }
+
     public function downloadMerged(Request $request)
     {
         $url = $request->query('url');

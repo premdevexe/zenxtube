@@ -17,6 +17,8 @@ Route::post('download', "MainController@download")->name('download');
 Route::get('download', function() { return redirect('/'); });
 Route::get('download/file', "MainController@downloadFile")->name('download.file');
 Route::get('download/merge', "MainController@downloadMerged")->name('download.merge');
+Route::get('download/process', "MainController@processDownload")->name('download.process');
+Route::get('download/file-ready', "MainController@downloadReadyFile")->name('download.file-ready');
 
 // Information & Legal Pages
 Route::get('privacy-policy', "MainController@privacy")->name('privacy');

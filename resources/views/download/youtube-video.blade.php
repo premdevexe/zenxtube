@@ -93,12 +93,8 @@
                                     <tbody>
                                         @foreach($merged_options as $opt)
                                             @php
-                                                $mergeUrl = url('download/merge?url=' . urlencode($url) . '&type=' . $opt['type'] . '&height=' . $opt['height'] . '&title=' . urlencode($title));
-                                            @endphp
-                                            @php
-                                                // JSON-encode with hex flags so uploader-controlled metadata
-                                                // (label/title) cannot break out of the JS string (XSS-safe).
-                                                $jsFlags = JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP;
+                                                $processUrl = url('download/process?url=' . urlencode($url) . '&type=' . $opt['type'] . '&height=' . $opt['height'] . '&title=' . urlencode($title));
+                                                $directUrl = url('download/merge?url=' . urlencode($url) . '&type=' . $opt['type'] . '&height=' . $opt['height'] . '&title=' . urlencode($title));
                                             @endphp
                                             <tr>
                                                 <td class="align-middle font-weight-bold">
@@ -108,17 +104,21 @@
                                                     @if($opt['type'] === 'audio')
                                                         <button type="button"
                                                                 class="btn btn-warning btn-sm text-dark merge-download-btn shadow-sm font-weight-bold px-3"
-                                                                data-url="{{ json_encode($mergeUrl, $jsFlags) }}"
-                                                                data-label="{{ json_encode($opt['label'], $jsFlags) }}"
-                                                                data-title="{{ json_encode($title, $jsFlags) }}">
+                                                                data-process-url="{{ $processUrl }}"
+                                                                data-direct-url="{{ $directUrl }}"
+                                                                data-label="{{ $opt['label'] }}"
+                                                                data-title="{{ $title }}"
+                                                                data-ext="{{ $opt['ext'] }}">
                                                             <i class="fa fa-music mr-1"></i> Download {{ strtoupper($opt['ext']) }}
                                                         </button>
                                                     @else
                                                         <button type="button"
                                                                 class="btn btn-success btn-sm merge-download-btn shadow-sm font-weight-bold px-3"
-                                                                data-url="{{ json_encode($mergeUrl, $jsFlags) }}"
-                                                                data-label="{{ json_encode($opt['label'], $jsFlags) }}"
-                                                                data-title="{{ json_encode($title, $jsFlags) }}">
+                                                                data-process-url="{{ $processUrl }}"
+                                                                data-direct-url="{{ $directUrl }}"
+                                                                data-label="{{ $opt['label'] }}"
+                                                                data-title="{{ $title }}"
+                                                                data-ext="{{ $opt['ext'] }}">
                                                             <i class="fa fa-video-camera mr-1"></i> Download {{ strtoupper($opt['ext']) }}
                                                         </button>
                                                     @endif
@@ -189,7 +189,7 @@
                 <div class="modal-body p-1 p-sm-2">
                     <!-- Icon Animation -->
                     <div id="modalIconContainer" class="download-icon-pulse">
-                        <i id="modalIcon" class="fa fa-cloud-download"></i>
+                        <i id="modalIcon" class="fa fa-refresh fa-spin text-primary"></i>
                     </div>
 
                     <!-- Video Title & Format -->
@@ -198,8 +198,8 @@
 
                     <!-- Status Text and Percentage -->
                     <div class="d-flex justify-content-between align-items-center mb-1">
-                        <span id="modalStatusText" class="step-indicator"><i class="fa fa-cog fa-spin"></i> Initializing download...</span>
-                        <span id="modalPercentText" class="font-weight-bold text-success font-size-lg">0%</span>
+                        <span id="modalStatusText" class="step-indicator"><i class="fa fa-spinner fa-spin"></i> Processing media on server...</span>
+                        <span id="modalPercentText" class="font-weight-bold text-success font-size-lg">15%</span>
                     </div>
 
                     <!-- Progress Bar Animation -->
@@ -207,18 +207,35 @@
                         <div id="modalProgressBar" 
                              class="progress-bar progress-bar-striped progress-bar-animated bg-success" 
                              role="progressbar" 
-                             style="width: 0%; transition: width 0.35s ease;">
+                             style="width: 15%; transition: width 0.4s ease;">
                         </div>
                     </div>
 
                     <!-- Subtext Description -->
-                    <p id="modalSubText" class="text-muted small mb-4">
-                        Preparing your high-speed download file...
+                    <p id="modalSubText" class="text-muted small mb-2">
+                        Downloading high-speed video and audio streams and merging them with FFmpeg. Please wait...
                     </p>
 
-                    <!-- Close Button (Shown on complete) -->
-                    <button type="button" id="modalCloseBtn" class="btn btn-outline-success px-4" data-dismiss="modal" style="display: none; border-radius: 20px;">
-                        <i class="fa fa-check"></i> Done
+                    <!-- Download Ready Action Area (Auto-triggers + direct click fallback) -->
+                    <div id="modalDownloadActionArea" style="display: none;">
+                        <a id="modalDownloadDirectBtn" href="#" class="btn btn-success btn-lg btn-block shadow-sm font-weight-bold py-3 mt-3 mb-2" style="border-radius: 12px; font-size: 1.1rem;">
+                            <i class="fa fa-download mr-1"></i> <span id="modalDownloadBtnText">Save File</span>
+                        </a>
+                        <small class="text-muted d-block mb-3">
+                            <i class="fa fa-info-circle mr-1"></i> If download did not start automatically, click the green button above.
+                        </small>
+                    </div>
+
+                    <!-- Retry / Direct Stream Fallback Area -->
+                    <div id="modalErrorActionArea" style="display: none;">
+                        <a id="modalDirectFallbackBtn" href="#" class="btn btn-warning btn-block font-weight-bold py-2 mt-3 mb-2 text-dark" style="border-radius: 8px;">
+                            <i class="fa fa-bolt mr-1"></i> Try Direct Download Link
+                        </a>
+                    </div>
+
+                    <!-- Close Button -->
+                    <button type="button" id="modalCloseBtn" class="btn btn-outline-secondary px-4 mt-2" data-dismiss="modal" style="display: none; border-radius: 20px;">
+                        Done
                     </button>
                 </div>
             </div>
@@ -230,6 +247,7 @@
 @section('scripts')
 <script>
 let progressTimer = null;
+let currentAbortCtrl = null;
 
 function handleSearchSubmit(form) {
     const btn = document.getElementById('searchSubmitBtn');
@@ -237,87 +255,119 @@ function handleSearchSubmit(form) {
     btn.classList.add('disabled');
 }
 
-// Merge buttons carry their data in JSON-encoded data-* attributes (XSS-safe).
-// A delegated handler parses them and opens the modal — no inline JS string
-// splicing of video metadata.
+// Delegated handler for merge download buttons
 $(document).on('click', '.merge-download-btn', function () {
     const btn = this;
-    const readJson = (key) => {
-        const raw = btn.getAttribute('data-' + key);
-        if (raw === null) return '';
-        try {
-            return JSON.parse(raw);
-        } catch (e) {
-            return raw;
-        }
-    };
-    openDownloadModal(readJson('url'), readJson('label'), readJson('title'));
+    const processUrl = btn.getAttribute('data-process-url');
+    const directUrl  = btn.getAttribute('data-direct-url');
+    const label      = btn.getAttribute('data-label') || '';
+    const title      = btn.getAttribute('data-title') || '';
+    const ext        = btn.getAttribute('data-ext') || 'mp4';
+
+    openDownloadModal(processUrl, directUrl, label, title, ext);
 });
 
-function openDownloadModal(downloadUrl, formatLabel, videoTitle) {
+function openDownloadModal(processUrl, directUrl, formatLabel, videoTitle, ext) {
     // Reset modal UI
     $('#modalVideoTitle').text(videoTitle);
     $('#modalFormatBadge').text(formatLabel);
-    $('#modalPercentText').text('0%');
-    $('#modalProgressBar').css('width', '0%').removeClass('bg-info').addClass('bg-success');
+    $('#modalPercentText').text('10%');
+    $('#modalProgressBar').css('width', '10%').removeClass('bg-danger').addClass('bg-success');
     
     $('#modalIconContainer').addClass('download-icon-pulse').css('background', 'rgba(40, 167, 69, 0.12)');
-    $('#modalIcon').attr('class', 'fa fa-cloud-download text-success');
-    $('#modalStatusText').html('<i class="fa fa-cog fa-spin"></i> Connecting to video server...');
-    $('#modalSubText').text('Fetching video and audio streams...');
+    $('#modalIcon').attr('class', 'fa fa-refresh fa-spin text-primary');
+    $('#modalStatusText').html('<i class="fa fa-spinner fa-spin"></i> Contacting video server...');
+    $('#modalSubText').text('Fetching and merging high quality video & audio streams. Please wait...');
+    
+    $('#modalDownloadActionArea').hide();
+    $('#modalErrorActionArea').hide();
     $('#modalCloseBtn').hide();
 
-    // Show the modal popup
+    // Show modal popup
     $('#downloadProgressModal').modal('show');
 
-    // Trigger download in hidden iframe so browser triggers Save Dialog without reloading page
-    let oldIframe = document.getElementById('download_iframe');
-    if (oldIframe) {
-        oldIframe.remove();
-    }
-    const iframe = document.createElement('iframe');
-    iframe.id = 'download_iframe';
-    iframe.style.display = 'none';
-    document.body.appendChild(iframe);
-    iframe.src = downloadUrl;
-
-    // Run multi-phase realistic progress animation
-    let percent = 0;
+    // Smooth progressive progress animation while waiting for server response
+    let percent = 10;
     if (progressTimer) clearInterval(progressTimer);
 
     progressTimer = setInterval(function() {
         if (percent < 30) {
-            percent += 6;
-            $('#modalStatusText').html('<i class="fa fa-bolt text-warning"></i> Connecting with 8 parallel streams...');
-        } else if (percent < 70) {
-            percent += 5;
-            $('#modalStatusText').html('<i class="fa fa-download text-primary"></i> High-speed multi-threaded download...');
-            $('#modalSubText').text('Downloading separate high quality video & audio files...');
-        } else if (percent < 90) {
             percent += 4;
-            $('#modalStatusText').html('<i class="fa fa-cogs fa-spin text-info"></i> Fast stream muxing with FFmpeg...');
-            $('#modalSubText').text('Combining streams into a single high-quality file...');
-        } else if (percent < 98) {
+            $('#modalStatusText').html('<i class="fa fa-bolt text-warning"></i> Connecting with 8 parallel streams...');
+            $('#modalSubText').text('Downloading separate video & audio fragments at high speed...');
+        } else if (percent < 60) {
+            percent += 3;
+            $('#modalStatusText').html('<i class="fa fa-download text-primary"></i> Downloading streams at maximum speed...');
+        } else if (percent < 85) {
             percent += 2;
-            $('#modalStatusText').html('<i class="fa fa-spinner fa-spin"></i> Finalizing file transfer...');
-            $('#modalSubText').text('Preparing file attachment for browser download...');
-        } else if (percent >= 98 && percent < 100) {
-            percent = 100;
-            clearInterval(progressTimer);
+            $('#modalStatusText').html('<i class="fa fa-cogs fa-spin text-info"></i> Lossless stream merging with FFmpeg...');
+            $('#modalSubText').text('Combining streams into a single high-quality ' + ext.toUpperCase() + ' file...');
+        } else if (percent < 95) {
+            percent += 1;
+            $('#modalStatusText').html('<i class="fa fa-spinner fa-spin"></i> Finalizing media container...');
+            $('#modalSubText').text('Preparing file attachment for your device...');
+        }
+        $('#modalProgressBar').css('width', percent + '%');
+        $('#modalPercentText').text(percent + '%');
+    }, 700);
 
-            // Completed State
+    // Call server AJAX endpoint to process & merge
+    fetch(processUrl, {
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            'Accept': 'application/json'
+        }
+    })
+    .then(response => {
+        if (!response.ok) {
+            return response.json().then(errData => {
+                throw new Error(errData.message || ('Server error: ' + response.status));
+            }).catch(e => {
+                throw new Error('Server returned error (' + response.status + '). Please try another stream.');
+            });
+        }
+        return response.json();
+    })
+    .then(data => {
+        if (progressTimer) clearInterval(progressTimer);
+
+        if (data.success && data.download_url) {
+            // Processing Succeeded!
             $('#modalProgressBar').css('width', '100%');
             $('#modalPercentText').text('100%');
             $('#modalIcon').attr('class', 'fa fa-check text-success');
             $('#modalIconContainer').removeClass('download-icon-pulse').css('background', 'rgba(40, 167, 69, 0.2)');
-            $('#modalStatusText').html('<strong class="text-success"><i class="fa fa-check-circle"></i> Download Started!</strong>');
-            $('#modalSubText').text('Your file download has started. Check your browser downloads.');
-            $('#modalCloseBtn').show();
-        }
+            $('#modalStatusText').html('<strong class="text-success"><i class="fa fa-check-circle"></i> File Ready!</strong>');
+            $('#modalSubText').text('File processed (' + (data.filesize || '') + '). Starting download to your device...');
 
-        $('#modalProgressBar').css('width', percent + '%');
-        $('#modalPercentText').text(percent + '%');
-    }, 220);
+            // Configure Download Button
+            $('#modalDownloadDirectBtn').attr('href', data.download_url);
+            $('#modalDownloadBtnText').text('Save ' + ext.toUpperCase() + ' (' + (data.filesize || 'Download') + ')');
+            $('#modalDownloadActionArea').show();
+            $('#modalCloseBtn').show();
+
+            // Trigger instantaneous native download
+            window.location.href = data.download_url;
+        } else {
+            throw new Error(data.message || 'Processing failed.');
+        }
+    })
+    .catch(err => {
+        if (progressTimer) clearInterval(progressTimer);
+
+        $('#modalProgressBar').css('width', '100%').removeClass('bg-success').addClass('bg-danger');
+        $('#modalPercentText').text('Error');
+        $('#modalIcon').attr('class', 'fa fa-exclamation-triangle text-danger');
+        $('#modalIconContainer').removeClass('download-icon-pulse').css('background', 'rgba(220, 53, 69, 0.12)');
+        $('#modalStatusText').html('<strong class="text-danger"><i class="fa fa-times-circle"></i> Processing Issue</strong>');
+        $('#modalSubText').text(err.message || 'Failed to process media file. You can still use the direct stream below.');
+
+        if (directUrl) {
+            $('#modalDirectFallbackBtn').attr('href', directUrl);
+            $('#modalErrorActionArea').show();
+        }
+        $('#modalCloseBtn').show();
+    });
 }
 
 $('#downloadProgressModal').on('hidden.bs.modal', function () {
