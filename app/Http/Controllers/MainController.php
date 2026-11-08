@@ -54,7 +54,14 @@ class MainController extends Controller
             $errMsg = "Unable to extract download links for this video. Please verify the URL is public and valid.";
             $detailedError = $this->downloader->getLastError();
             if (!empty($detailedError)) {
-                if (stripos($detailedError, 'unavailable') !== false) {
+                \Log::warning("Video extraction failed for [{$url}]: " . substr($detailedError, 0, 500));
+                if (stripos($detailedError, 'Exec format error') !== false || stripos($detailedError, 'cannot execute binary file') !== false) {
+                    $errMsg = "Server environment issue: Downloader binary format mismatch. Please verify the Linux yt-dlp binary is installed in bin/.";
+                } elseif (stripos($detailedError, 'Permission denied') !== false) {
+                    $errMsg = "Server permission issue: Execution permission denied on downloader binary. Please run 'chmod 755 bin/yt-dlp'.";
+                } elseif (stripos($detailedError, 'Sign in to confirm you\'re not a bot') !== false || stripos($detailedError, 'HTTP Error 429') !== false) {
+                    $errMsg = "YouTube is temporarily rate-limiting requests from this server IP. Please try again in a few moments or configure cookies in admin.";
+                } elseif (stripos($detailedError, 'unavailable') !== false) {
                     $errMsg = "This video is unavailable or does not exist. Please check the link.";
                 } elseif (stripos($detailedError, 'private') !== false) {
                     $errMsg = "This video is private or restricted. Please enter a public video link.";
@@ -64,6 +71,8 @@ class MainController extends Controller
                     $errMsg = "The provided link is not a recognized video URL.";
                 } elseif (stripos($detailedError, 'removed') !== false) {
                     $errMsg = "This video has been removed by the uploader.";
+                } elseif (stripos($detailedError, 'Downloader process failed to start') !== false) {
+                    $errMsg = "Downloader engine failed to launch on this server. Please verify PHP proc_open is enabled in php.ini.";
                 }
             }
             return redirect('/')->withErrors([$errMsg]);

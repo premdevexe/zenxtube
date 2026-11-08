@@ -452,7 +452,7 @@ function checkPushPermissionStatus() {
 }
 
 function testBrowserPush() {
-    const title = document.getElementById('notifTitleInput').value || 'Zen X Download Alert';
+    const title = document.getElementById('notifTitleInput').value || '{{ \App\SiteSetting::get("site_name", "Zen X Download") }} Alert';
     const message = document.getElementById('notifMessageInput').value || 'This is how your instant browser notification appears!';
     const link = document.getElementById('notifLinkInput').value || window.location.origin;
 

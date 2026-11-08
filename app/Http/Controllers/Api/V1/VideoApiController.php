@@ -115,10 +115,12 @@ class VideoApiController extends BaseApiController
         }
 
         $items = array_map(function ($v) {
+            $vid = $v['id'] ?? $v['encrypted_id'] ?? '';
+            $vurl = $v['url'] ?? ($vid ? "https://www.youtube.com/watch?v={$vid}" : '');
             return [
-                'video_id' => $v['id'] ?? '',
+                'video_id' => $vid,
                 'title' => $v['title'] ?? 'Untitled Video',
-                'url' => $v['url'] ?? '',
+                'url' => $vurl,
                 'thumbnail' => $v['thumbnail'] ?? '',
                 'duration' => $v['duration'] ?? '',
                 'uploader' => $v['uploader'] ?? '',

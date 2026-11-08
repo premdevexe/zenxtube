@@ -1,0 +1,33 @@
+# ==============================================================================
+# Zen X Download — Root Directory Protection & cPanel Front Controller Rewrite
+# ==============================================================================
+# This .htaccess file protects sensitive project files when hosted on Apache/cPanel
+# shared hosting environments where DocumentRoot cannot be pointed directly to /public.
+# ==============================================================================
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # 1. SECURITY: Block direct access to sensitive configuration, source, and storage files
+    RewriteRule ^(\.env|\.git|\.github|artisan|composer\.(json|lock)|package\.(json|lock)|phpunit\.xml) - [F,L,NC]
+    RewriteRule ^(app|bootstrap|config|database|resources|routes|storage|vendor)/ - [F,L,NC]
+
+    # 2. Redirect all other traffic to the public/ directory
+    RewriteCond %{REQUEST_URI} !^/public/
+    RewriteRule ^(.*)$ public/$1 [L]
+</IfModule>
+
+# Disable directory browsing
+Options -Indexes
+
+# Block sensitive extensions
+<FilesMatch "\.(env|log|json|lock|xml|yml|yaml|md|sql)$">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order deny,allow
+        Deny from all
+    </IfModule>
+</FilesMatch>
+

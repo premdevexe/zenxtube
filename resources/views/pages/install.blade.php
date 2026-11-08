@@ -1,6 +1,10 @@
 @extends('app')
 
-@section('title', 'Installation & Deployment Guide - Minimal White Setup - Zen X Download')
+@php
+    $siteName = \App\SiteSetting::get('site_name', 'Zen X Download');
+@endphp
+
+@section('title', 'Installation & Deployment Guide - Minimal White Setup - ' . $siteName)
 
 @section('styles')
 <style>
@@ -101,30 +105,69 @@
         color: #ffffff !important;
     }
 
+    .tabs-scroll-container {
+        overflow-x: auto;
+        overflow-y: hidden;
+        white-space: nowrap;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: thin;
+        margin-bottom: 1.5rem;
+        border-bottom: 2px solid #e2e8f0;
+    }
+
+    .tabs-scroll-container::-webkit-scrollbar {
+        height: 4px;
+    }
+
+    .tabs-scroll-container::-webkit-scrollbar-thumb {
+        background: #cbd5e1;
+        border-radius: 4px;
+    }
+
     .nav-tabs-minimal {
-        border-bottom: 2px solid #f1f5f9;
+        border-bottom: none;
+        display: inline-flex;
+        flex-wrap: nowrap;
+        min-width: 100%;
+        margin-bottom: 0 !important;
+        padding-bottom: 0;
+    }
+
+    .nav-tabs-minimal .nav-item {
+        margin-bottom: 0;
     }
 
     .nav-tabs-minimal .nav-link {
         border: none;
+        border-bottom: 2px solid transparent;
+        margin-bottom: -2px;
         color: #64748b;
         font-weight: 600;
+        font-size: 0.92rem;
         padding: 10px 18px;
-        border-radius: 8px 8px 0 0;
-        margin-right: 4px;
+        white-space: nowrap;
+        border-radius: 6px 6px 0 0;
+        margin-right: 6px;
         background: transparent;
-        transition: all 0.15s ease;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        text-decoration: none;
+        transition: color 0.15s ease, border-color 0.15s ease, background-color 0.15s ease;
     }
 
     .nav-tabs-minimal .nav-link.active {
-        color: #0f172a;
-        background: #f8fafc;
-        border-bottom: 2px solid #0f172a;
+        color: #0f172a !important;
+        background: #ffffff;
+        border-bottom: 2px solid #2563eb !important;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.03);
     }
 
     .nav-tabs-minimal .nav-link:hover:not(.active) {
-        color: #0f172a;
-        background: #f8fafc;
+        color: #1e293b;
+        background: #f1f5f9;
+        border-bottom-color: #cbd5e1;
     }
 
     .pill-label {
@@ -178,10 +221,10 @@
                 <i class="fa fa-wrench mr-1"></i> Quickstart &amp; Deployment Guide
             </span>
             <h1 class="font-weight-bold text-dark mt-2 mb-3" style="font-size: 2.3rem; letter-spacing: -0.02em;">
-                Zen X Download Installation Guide
+                {{ $siteName }} Installation Guide
             </h1>
             <p class="text-secondary mx-auto mb-4" style="max-width: 680px; font-size: 1.05rem; line-height: 1.6;">
-                Step-by-step instructions to install, configure database, verify media binaries (<code class="text-dark">yt-dlp</code> &amp; <code class="text-dark">FFmpeg</code>), and deploy Zen X Download in minutes.
+                Step-by-step instructions to install, configure database, verify media binaries (<code class="text-dark">yt-dlp</code> &amp; <code class="text-dark">FFmpeg</code>), and deploy {{ $siteName }} in minutes.
             </p>
             <div class="d-flex flex-wrap justify-content-center align-items-center gap-2">
                 <a href="#quick-steps" class="btn btn-dark btn-sm px-4 py-2 font-weight-bold mr-2 mb-2" style="border-radius: 8px;">
@@ -201,28 +244,30 @@
             <div class="col-lg-8 col-12 mb-4">
 
                 <!-- Platform Tabs (Windows vs Linux vs macOS) -->
-                <ul class="nav nav-tabs nav-tabs-minimal mb-4" id="osTabs" role="tablist">
-                    <li class="nav-item">
-                        <a class="nav-link active" id="tab-windows" data-toggle="tab" href="#os-windows" role="tab">
-                            <i class="fa fa-windows text-primary mr-1"></i> Windows (PowerShell / XAMPP)
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" id="tab-linux" data-toggle="tab" href="#os-linux" role="tab">
-                            <i class="fa fa-linux text-dark mr-1"></i> Linux (Ubuntu / VPS)
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" id="tab-cpanel" data-toggle="tab" href="#os-cpanel" role="tab">
-                            <i class="fa fa-server text-danger mr-1"></i> cPanel (Shared Hosting)
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" id="tab-macos" data-toggle="tab" href="#os-macos" role="tab">
-                            <i class="fa fa-apple text-dark mr-1"></i> macOS (Homebrew)
-                        </a>
-                    </li>
-                </ul>
+                <div class="tabs-scroll-container">
+                    <ul class="nav nav-tabs nav-tabs-minimal" id="osTabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <a class="nav-link active" id="tab-windows" data-toggle="tab" data-bs-toggle="tab" href="#os-windows" data-target="#os-windows" data-bs-target="#os-windows" role="tab" aria-controls="os-windows" aria-selected="true">
+                                <i class="fa fa-windows text-primary"></i> <span>Windows (PowerShell / XAMPP)</span>
+                            </a>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <a class="nav-link" id="tab-linux" data-toggle="tab" data-bs-toggle="tab" href="#os-linux" data-target="#os-linux" data-bs-target="#os-linux" role="tab" aria-controls="os-linux" aria-selected="false">
+                                <i class="fa fa-linux text-dark"></i> <span>Linux (Ubuntu / VPS)</span>
+                            </a>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <a class="nav-link" id="tab-cpanel" data-toggle="tab" data-bs-toggle="tab" href="#os-cpanel" data-target="#os-cpanel" data-bs-target="#os-cpanel" role="tab" aria-controls="os-cpanel" aria-selected="false">
+                                <i class="fa fa-server text-danger"></i> <span>cPanel (Shared Hosting)</span>
+                            </a>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <a class="nav-link" id="tab-macos" data-toggle="tab" data-bs-toggle="tab" href="#os-macos" data-target="#os-macos" data-bs-target="#os-macos" role="tab" aria-controls="os-macos" aria-selected="false">
+                                <i class="fa fa-apple text-dark"></i> <span>macOS (Homebrew)</span>
+                            </a>
+                        </li>
+                    </ul>
+                </div>
 
                 <div class="tab-content" id="osTabContent">
                     
@@ -568,7 +613,7 @@
                         <i class="fa fa-lightbulb-o text-warning mr-1"></i> Pro Tip: PHP 8.2 Compatibility
                     </h6>
                     <p class="small text-secondary mb-0">
-                        PHP 8.1+ introduced <code>full_path</code> in file upload bags. In Zen X Download, this has already been patched in <code>bootstrap/app.php</code> and <code>public/index.php</code> so file uploads and site logo settings work without Symfony <code>FileBag</code> fatal errors.
+                        PHP 8.1+ introduced <code>full_path</code> in file upload bags. In {{ $siteName }}, this has already been patched in <code>bootstrap/app.php</code> and <code>public/index.php</code> so file uploads and site logo settings work without Symfony <code>FileBag</code> fatal errors.
                     </p>
                 </div>
 
@@ -656,8 +701,104 @@ function runLiveHealthCheck() {
         });
 }
 
+// Bulletproof Cross-Framework Tab Switcher (Works with Vanilla JS, Bootstrap 4 & 5)
+function initZenTabs(navId, contentId) {
+    const nav = document.getElementById(navId);
+    const content = document.getElementById(contentId);
+    if (!nav || !content) return;
+
+    const tabLinks = nav.querySelectorAll('.nav-link');
+    const panes = content.querySelectorAll('.tab-pane');
+
+    function activateTab(targetId, updateUrl) {
+        if (!targetId) return;
+        const cleanId = targetId.replace(/^#/, '');
+        const targetPane = document.getElementById(cleanId);
+        if (!targetPane) return;
+
+        // 1. Deactivate all tab links
+        tabLinks.forEach(link => {
+            link.classList.remove('active');
+            link.setAttribute('aria-selected', 'false');
+        });
+
+        // 2. Hide all tab panes
+        panes.forEach(pane => {
+            pane.classList.remove('show', 'active');
+            pane.style.display = 'none';
+        });
+
+        // 3. Find and activate matching tab link
+        const activeLink = Array.from(tabLinks).find(link => {
+            const href = (link.getAttribute('href') || link.getAttribute('data-target') || link.getAttribute('data-bs-target') || '').replace(/^#/, '');
+            return href === cleanId;
+        });
+
+        if (activeLink) {
+            activeLink.classList.add('active');
+            activeLink.setAttribute('aria-selected', 'true');
+
+            // Ensure active tab is visible in scroll container on small screens
+            const container = nav.closest('.tabs-scroll-container');
+            if (container) {
+                const linkRect = activeLink.getBoundingClientRect();
+                const contRect = container.getBoundingClientRect();
+                if (linkRect.left < contRect.left || linkRect.right > contRect.right) {
+                    activeLink.scrollIntoView({ behavior: 'smooth', inline: 'nearest', block: 'nearest' });
+                }
+            }
+        }
+
+        // 4. Show and animate matching pane
+        targetPane.style.display = 'block';
+        void targetPane.offsetHeight; // Trigger reflow for fade transition
+        targetPane.classList.add('show', 'active');
+
+        // 5. Update URL hash without jumping page scroll
+        if (updateUrl && window.history && window.history.replaceState) {
+            window.history.replaceState(null, null, '#' + cleanId);
+        }
+
+        // 6. Persist active tab preference
+        try {
+            localStorage.setItem('zenx_active_tab_' + navId, cleanId);
+        } catch (e) {}
+    }
+
+    // Attach click listeners to all tab links
+    tabLinks.forEach(link => {
+        link.addEventListener('click', function(e) {
+            e.preventDefault();
+            const target = this.getAttribute('data-target') || this.getAttribute('data-bs-target') || this.getAttribute('href');
+            if (target) {
+                activateTab(target, true);
+            }
+        });
+    });
+
+    // Check URL hash first, then localStorage, then default to first active
+    const hash = window.location.hash ? window.location.hash.replace(/^#/, '') : null;
+    let saved = null;
+    try {
+        saved = localStorage.getItem('zenx_active_tab_' + navId);
+    } catch (e) {}
+
+    if (hash && document.getElementById(hash)) {
+        activateTab(hash, false);
+    } else if (saved && document.getElementById(saved)) {
+        activateTab(saved, false);
+    } else {
+        const defaultLink = nav.querySelector('.nav-link.active') || tabLinks[0];
+        if (defaultLink) {
+            const target = defaultLink.getAttribute('data-target') || defaultLink.getAttribute('data-bs-target') || defaultLink.getAttribute('href');
+            if (target) activateTab(target, false);
+        }
+    }
+}
+
 // Auto-run once on page load
 document.addEventListener('DOMContentLoaded', function() {
+    initZenTabs('osTabs', 'osTabContent');
     runLiveHealthCheck();
 });
 </script>

@@ -67,4 +67,54 @@ class ApiSetting extends Model
             ]
         );
     }
+
+    /**
+     * Dynamically resolve API base URL.
+     * Automatically adapts to the active domain, host, port, and HTTPS on live servers.
+     */
+    public static function getBaseUrl(): string
+    {
+        $stored = static::where('key', 'api_base_url')->value('value');
+        $defaultUrl = url('/api/v1');
+
+        if (empty($stored)) {
+            static::set('api_base_url', $defaultUrl, 'string', true, 'general', 'Primary API gateway base URL');
+            return $defaultUrl;
+        }
+
+        // If in an HTTP request context, check if the stored URL was a localhost placeholder but accessed via a live domain/host
+        if (app()->bound('request')) {
+            $request = request();
+            if ($request && method_exists($request, 'getHost')) {
+                $reqHost = $request->getHost();
+                $storedHost = parse_url($stored, PHP_URL_HOST);
+
+                $isStoredLocal = in_array($storedHost, ['127.0.0.1', 'localhost', '::1', null], true);
+                $isReqLocal = in_array($reqHost, ['127.0.0.1', 'localhost', '::1', null], true);
+
+                // Auto-update to live domain if stored was local and request is on a live domain
+                if (!empty($reqHost) && (!$isReqLocal && $isStoredLocal)) {
+                    $liveBaseUrl = rtrim($request->schemeAndHttpHost(), '/') . '/api/v1';
+                    static::set('api_base_url', $liveBaseUrl, 'string', true, 'general', 'Primary API gateway base URL');
+                    return $liveBaseUrl;
+                }
+            }
+        }
+
+        return $stored;
+    }
+
+    /**
+     * Explicitly sync and persist the API base URL to match the current incoming request host.
+     */
+    public static function syncBaseUrlWithCurrentHost(): string
+    {
+        $liveUrl = url('/api/v1');
+        if (app()->bound('request') && request()) {
+            $liveUrl = rtrim(request()->schemeAndHttpHost(), '/') . '/api/v1';
+        }
+
+        static::set('api_base_url', $liveUrl, 'string', true, 'general', 'Primary API gateway base URL');
+        return $liveUrl;
+    }
 }

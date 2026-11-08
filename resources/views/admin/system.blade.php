@@ -148,6 +148,60 @@
                 </div>
             </div>
         </div>
+
+        <!-- Installer Core & Security Lock Management -->
+        <div class="col-12 mb-4">
+            <div class="card border-0 shadow-sm bg-white">
+                <div class="card-header bg-white border-bottom py-3 d-flex flex-wrap justify-content-between align-items-center">
+                    <div>
+                        <h6 class="font-weight-bold text-dark mb-0 font-mono">
+                            <i class="fa fa-shield text-primary mr-1"></i> [CORE: INSTALLER_SECURITY_LOCK]
+                        </h6>
+                        <small class="text-muted">Manage one-time installation state, wizard locking, and emergency re-initialization.</small>
+                    </div>
+                    <div>
+                        @if(!empty($installerStatus['is_installed']))
+                            <span class="badge badge-success px-2 py-1 font-mono"><i class="fa fa-lock"></i> LOCKED (SECURE)</span>
+                        @else
+                            <span class="badge badge-warning px-2 py-1 font-mono"><i class="fa fa-unlock"></i> UNLOCKED (OPEN)</span>
+                        @endif
+                    </div>
+                </div>
+
+                <div class="card-body p-3">
+                    <div class="row align-items-center">
+                        <div class="col-lg-8 col-12 mb-3 mb-lg-0">
+                            <div class="font-mono small text-secondary">
+                                <div class="mb-1"><strong>Lock File:</strong> <code>{{ $installerStatus['lock_file'] ?? 'storage/app/installer/installed.lock' }}</code></div>
+                                <div class="mb-1"><strong>Installed At:</strong> {{ $installerStatus['installed_at'] ?? 'Pending Lock' }}</div>
+                                <div><strong>Wizard Route:</strong> <a href="{{ url('installer') }}" target="_blank" class="text-primary font-weight-bold">{{ url('installer') }}</a></div>
+                            </div>
+                        </div>
+                        <div class="col-lg-4 col-12 text-lg-right">
+                            @if(!empty($installerStatus['is_installed']))
+                                <form action="{{ route('admin.system.installer-reset') }}" method="post" class="d-inline" onsubmit="return confirm('Unlock the installer? This allows access to /installer. (Equivalent to: php artisan reset:install)')">
+                                    {{ csrf_field() }}
+                                    <button type="submit" class="btn btn-outline-danger btn-sm font-weight-bold">
+                                        <i class="fa fa-unlock"></i> Reset &amp; Unlock Installer
+                                    </button>
+                                </form>
+                            @else
+                                <form action="{{ route('admin.system.installer-lock') }}" method="post" class="d-inline">
+                                    {{ csrf_field() }}
+                                    <button type="submit" class="btn btn-dark btn-sm font-weight-bold">
+                                        <i class="fa fa-lock"></i> Lock Installer Now
+                                    </button>
+                                </form>
+                            @endif
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card-footer bg-light border-top py-2 small text-muted font-mono" style="font-size: 0.74rem;">
+                    <span>CLI Commands: <code>php artisan reset:install</code> &bull; <code>php artisan installer:lock</code> &bull; <code>php artisan installer:status</code></span>
+                </div>
+            </div>
+        </div>
     </div>
 
 @endsection

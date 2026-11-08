@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-    <title>@yield('title', 'Admin Dashboard') - Zen X Download</title>
+    <title>@yield('title', 'Admin Dashboard') - {{ \App\SiteSetting::get('site_name', 'Zen X Download') }}</title>
 
     <!-- Favicon -->
     <link rel="icon" type="image/svg+xml" href="{{ \App\SiteSetting::assetPath('site_favicon', 'images/logo-icon.svg') }}">
@@ -141,7 +141,7 @@
             <!-- Sidebar -->
             <div class="col-lg-2 col-md-3 admin-sidebar">
                 <a href="{{ route('admin.dashboard') }}" class="sidebar-brand text-decoration-none d-flex align-items-center">
-                    <img src="{{ \App\SiteSetting::assetPath('site_logo_white', 'images/logo-white.svg') }}" alt="Zen X Admin" height="32" style="max-height: 34px; width: auto; object-fit: contain;">
+                    <img src="{{ \App\SiteSetting::assetPath('site_logo_white', 'images/logo-white.svg') }}" alt="{{ \App\SiteSetting::get('site_name', 'Zen X Download') }} Admin" height="32" style="max-height: 34px; width: auto; object-fit: contain;">
                 </a>
 
                 <div class="py-3">
@@ -257,17 +257,18 @@
                 <div class="admin-topbar d-flex justify-content-between align-items-center">
                     <div>
                         <h5 class="mb-0 font-weight-bold text-dark">@yield('page_title', 'Dashboard')</h5>
-                        <small class="text-muted">Zen X Download Administration Portal</small>
+                        <small class="text-muted">{{ \App\SiteSetting::get('site_name', 'Zen X Download') }} Administration Portal</small>
                     </div>
 
                     <div class="d-flex align-items-center">
                         <a href="{{ url('/') }}" target="_blank" class="btn btn-outline-primary btn-sm mr-3 font-weight-bold">
                             <i class="fa fa-globe"></i> View Website
                         </a>
+                        @if(Auth::check())
                         <div class="dropdown">
                             <button class="btn btn-light btn-sm dropdown-toggle font-weight-bold d-flex align-items-center" type="button" id="userMenu" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                                 <i class="fa fa-user-circle-o fa-lg text-primary mr-2"></i>
-                                <span>{{ Auth::check() ? Auth::user()->name : 'Administrator' }}</span>
+                                <span>{{ Auth::user()->name }}</span>
                             </button>
                             <div class="dropdown-menu dropdown-menu-right shadow-sm" aria-labelledby="userMenu">
                                 <a class="dropdown-item" href="{{ route('admin.profile') }}"><i class="fa fa-cog mr-2"></i> Profile Settings</a>
@@ -277,6 +278,11 @@
                                 </a>
                             </div>
                         </div>
+                        @else
+                        <a href="{{ route('admin.login') }}" class="btn btn-outline-secondary btn-sm font-weight-bold">
+                            <i class="fa fa-sign-in mr-1"></i> Admin Login
+                        </a>
+                        @endif
                     </div>
                 </div>
 
@@ -346,7 +352,7 @@
 
                 <!-- Admin Footer -->
                 <footer class="bg-white border-top p-3 text-center text-muted small mt-auto">
-                    &copy; {{ date('Y') }} <strong>Zen X Download</strong> Admin Panel &bull; Powered by Laravel {{ app()->version() }}
+                    &copy; {{ date('Y') }} <strong>{{ \App\SiteSetting::get('site_name', 'Zen X Download') }}</strong> Admin Panel &bull; Powered by Laravel {{ app()->version() }}
                 </footer>
             </div>
         </div>

@@ -100,9 +100,9 @@ class ConfigApiController extends BaseApiController
         $publicSettings = ApiSetting::where('is_public', true)->get()->pluck('value', 'key')->toArray();
 
         return $this->successResponse([
-            'app_name' => 'Zen X Download',
-            'tagline' => 'Universal High-Speed Video & Audio Downloader',
-            'base_url' => $publicSettings['api_base_url'] ?? url('/api/v1'),
+            'app_name' => \App\SiteSetting::get('site_name', config('app.name', 'Zen X Download')),
+            'tagline' => \App\SiteSetting::get('site_tagline', 'Universal High-Speed Video & Audio Downloader'),
+            'base_url' => ApiSetting::getBaseUrl(),
             'maintenance_mode' => (bool)($publicSettings['api_maintenance_mode'] ?? false),
             'maintenance_message' => $publicSettings['api_maintenance_message'] ?? '',
             'limits' => [
@@ -143,7 +143,7 @@ class ConfigApiController extends BaseApiController
 
         $minVersion = ApiSetting::get($platform . '_min_version', '1.0.0');
         $latestVersion = ApiSetting::get($platform . '_latest_version', '1.0.0');
-        $updateUrl = ApiSetting::get($platform . '_update_url', 'https://zenxdownload.com');
+        $updateUrl = ApiSetting::get($platform . '_update_url', url('/download/app-' . $platform . '.apk'));
         $forceUpdate = (bool)ApiSetting::get($platform . '_force_update', false);
 
         $clientVersion = $request->header('X-App-Version') ?: $request->query('current_version', '1.0.0');

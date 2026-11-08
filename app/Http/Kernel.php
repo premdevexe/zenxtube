@@ -35,6 +35,7 @@ class Kernel extends HttpKernel
             \Illuminate\View\Middleware\ShareErrorsFromSession::class,
             \App\Http\Middleware\VerifyCsrfToken::class,
             \Illuminate\Routing\Middleware\SubstituteBindings::class,
+            \App\Http\Middleware\EnsureInstalled::class,
         ],
 
         'api' => [
@@ -60,6 +61,8 @@ class Kernel extends HttpKernel
         'signed' => \Illuminate\Routing\Middleware\ValidateSignature::class,
         'throttle' => \Illuminate\Routing\Middleware\ThrottleRequests::class,
         'admin' => \App\Http\Middleware\AdminMiddleware::class,
+        'installer.not_installed' => \App\Http\Middleware\EnsureNotInstalled::class,
+        'installer.installed' => \App\Http\Middleware\EnsureInstalled::class,
         'api.auth' => \App\Http\Middleware\Api\ApiAuthenticate::class,
         'api.rate_limit' => \App\Http\Middleware\Api\ApiRateLimiter::class,
         'api.logger' => \App\Http\Middleware\Api\ApiLogger::class,

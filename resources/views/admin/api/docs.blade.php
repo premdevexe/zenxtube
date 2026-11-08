@@ -1,6 +1,48 @@
 @extends('admin.layout')
 
+@php
+    $baseUrl = $baseUrl ?? \App\ApiSetting::getBaseUrl();
+@endphp
+
 @section('title', 'API Reference & AI Integration Hub')
+
+@section('styles')
+<style>
+    .tabs-scroll-container {
+        overflow-x: auto;
+        overflow-y: hidden;
+        white-space: nowrap;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: thin;
+    }
+    .tabs-scroll-container::-webkit-scrollbar {
+        height: 4px;
+    }
+    .tabs-scroll-container::-webkit-scrollbar-thumb {
+        background: rgba(255,255,255,0.2);
+        border-radius: 4px;
+    }
+    #aiPromptTabs .nav-link {
+        color: rgba(255, 255, 255, 0.75);
+        border-radius: 6px;
+        padding: 8px 16px;
+        margin-right: 6px;
+        cursor: pointer;
+        text-decoration: none;
+        white-space: nowrap;
+        transition: all 0.15s ease;
+    }
+    #aiPromptTabs .nav-link:hover {
+        color: #ffffff;
+        background: rgba(255, 255, 255, 0.12);
+    }
+    #aiPromptTabs .nav-link.active {
+        color: #ffffff !important;
+        background: #2563eb !important;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    }
+</style>
+@endsection
 
 @section('content')
 <div class="row align-items-center mb-4">
@@ -54,33 +96,40 @@
         </div>
 
         <!-- AI Tabs Navigation -->
-        <ul class="nav nav-pills mb-3 border-bottom pb-2 border-secondary" id="aiPromptTabs" role="tablist">
-            <li class="nav-item">
-                <a class="nav-link active font-weight-bold text-white" id="tab-universal-btn" data-toggle="pill" href="#tab-universal" role="tab">
-                    <i class="fa fa-globe mr-1"></i> Universal Master Prompt
-                </a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link font-weight-bold text-white" id="tab-android-btn" data-toggle="pill" href="#tab-android" role="tab">
-                    <i class="fa fa-android mr-1 text-success"></i> Android (Kotlin + Compose)
-                </a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link font-weight-bold text-white" id="tab-ios-btn" data-toggle="pill" href="#tab-ios" role="tab">
-                    <i class="fa fa-apple mr-1"></i> iOS (Swift + SwiftUI)
-                </a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link font-weight-bold text-white" id="tab-web-btn" data-toggle="pill" href="#tab-web" role="tab">
-                    <i class="fa fa-code mr-1 text-info"></i> Web (React / Next.js)
-                </a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link font-weight-bold text-white" id="tab-python-btn" data-toggle="pill" href="#tab-python" role="tab">
-                    <i class="fa fa-terminal mr-1 text-warning"></i> Python / CLI Bot
-                </a>
-            </li>
-        </ul>
+        <div class="tabs-scroll-container mb-3 border-bottom border-secondary pb-2">
+            <ul class="nav nav-pills flex-nowrap" id="aiPromptTabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <a class="nav-link active font-weight-bold" id="tab-universal-btn" data-toggle="pill" data-bs-toggle="pill" href="#tab-universal" data-target="#tab-universal" data-bs-target="#tab-universal" role="tab" aria-controls="tab-universal" aria-selected="true">
+                        <i class="fa fa-globe mr-1"></i> Universal Master Prompt
+                    </a>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <a class="nav-link font-weight-bold" id="tab-android-btn" data-toggle="pill" data-bs-toggle="pill" href="#tab-android" data-target="#tab-android" data-bs-target="#tab-android" role="tab" aria-controls="tab-android" aria-selected="false">
+                        <i class="fa fa-android mr-1 text-success"></i> Android (Kotlin + Compose)
+                    </a>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <a class="nav-link font-weight-bold" id="tab-ios-btn" data-toggle="pill" data-bs-toggle="pill" href="#tab-ios" data-target="#tab-ios" data-bs-target="#tab-ios" role="tab" aria-controls="tab-ios" aria-selected="false">
+                        <i class="fa fa-apple mr-1"></i> iOS (Swift + SwiftUI)
+                    </a>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <a class="nav-link font-weight-bold" id="tab-web-btn" data-toggle="pill" data-bs-toggle="pill" href="#tab-web" data-target="#tab-web" data-bs-target="#tab-web" role="tab" aria-controls="tab-web" aria-selected="false">
+                        <i class="fa fa-code mr-1 text-info"></i> Web (React / Next.js)
+                    </a>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <a class="nav-link font-weight-bold" id="tab-python-btn" data-toggle="pill" data-bs-toggle="pill" href="#tab-python" data-target="#tab-python" data-bs-target="#tab-python" role="tab" aria-controls="tab-python" aria-selected="false">
+                        <i class="fa fa-terminal mr-1 text-warning"></i> Python / CLI Bot
+                    </a>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <a class="nav-link font-weight-bold" id="tab-flutter-btn" data-toggle="pill" data-bs-toggle="pill" href="#tab-flutter" data-target="#tab-flutter" data-bs-target="#tab-flutter" role="tab" aria-controls="tab-flutter" aria-selected="false">
+                        <i class="fa fa-mobile mr-1 text-primary"></i> Flutter (Dart / Cross-Platform)
+                    </a>
+                </li>
+            </ul>
+        </div>
 
         <!-- AI Tab Contents -->
         <div class="tab-content" id="aiPromptTabsContent">
@@ -95,7 +144,7 @@
                         <i class="fa fa-clone mr-1"></i> Copy Universal Prompt for AI
                     </button>
                 </div>
-                <textarea id="prompt-universal" class="form-control bg-dark text-light font-monospace small" rows="11" readonly style="resize: vertical; border-color: rgba(255,255,255,0.15); font-family: monospace;">You are an expert full-stack software engineer implementing a production-grade client application for the Zen X Download REST API platform.
+                <textarea id="prompt-universal" class="form-control bg-dark text-light font-monospace small" rows="11" readonly style="resize: vertical; border-color: rgba(255,255,255,0.15); font-family: monospace;">You are an expert full-stack software engineer implementing a production-grade client application for the {{ \App\SiteSetting::get('site_name', 'Zen X Download') }} REST API platform.
 
 ### API SPECIFICATION & ENVIRONMENT
 - Base URL: {{ $baseUrl }}
@@ -162,7 +211,7 @@
                         <i class="fa fa-clone mr-1"></i> Copy Android Prompt for AI
                     </button>
                 </div>
-                <textarea id="prompt-android" class="form-control bg-dark text-light font-monospace small" rows="11" readonly style="resize: vertical; border-color: rgba(255,255,255,0.15); font-family: monospace;">Create a modern, production-ready Android application in Kotlin using Jetpack Compose, Retrofit2, OkHttp3, and Coroutines/Flow that integrates with the Zen X Download REST API v1.
+                <textarea id="prompt-android" class="form-control bg-dark text-light font-monospace small" rows="11" readonly style="resize: vertical; border-color: rgba(255,255,255,0.15); font-family: monospace;">Create a modern, production-ready Android application in Kotlin using Jetpack Compose, Retrofit2, OkHttp3, and Coroutines/Flow that integrates with the {{ \App\SiteSetting::get('site_name', 'Zen X Download') }} REST API v1.
 
 ### API SPECIFICATION
 - Base URL: http://10.0.2.2:8000/api/v1 (Android Emulator localhost) or {{ $baseUrl }}
@@ -207,7 +256,7 @@
                         <i class="fa fa-clone mr-1"></i> Copy iOS Prompt for AI
                     </button>
                 </div>
-                <textarea id="prompt-ios" class="form-control bg-dark text-light font-monospace small" rows="11" readonly style="resize: vertical; border-color: rgba(255,255,255,0.15); font-family: monospace;">Create a modern, production-grade iOS application in Swift using SwiftUI and URLSession that connects to the Zen X Download REST API v1.
+                <textarea id="prompt-ios" class="form-control bg-dark text-light font-monospace small" rows="11" readonly style="resize: vertical; border-color: rgba(255,255,255,0.15); font-family: monospace;">Create a modern, production-grade iOS application in Swift using SwiftUI and URLSession that connects to the {{ \App\SiteSetting::get('site_name', 'Zen X Download') }} REST API v1.
 
 ### API TARGET & ARCHITECTURE
 - Base URL: {{ $baseUrl }} (or production URL)
@@ -243,7 +292,7 @@
                         <i class="fa fa-clone mr-1"></i> Copy Web Prompt for AI
                     </button>
                 </div>
-                <textarea id="prompt-web" class="form-control bg-dark text-light font-monospace small" rows="11" readonly style="resize: vertical; border-color: rgba(255,255,255,0.15); font-family: monospace;">Create a high-performance Next.js 14+ (App Router) / React web frontend in TypeScript with Tailwind CSS and Lucide icons that integrates with the Zen X Download REST API v1.
+                <textarea id="prompt-web" class="form-control bg-dark text-light font-monospace small" rows="11" readonly style="resize: vertical; border-color: rgba(255,255,255,0.15); font-family: monospace;">Create a high-performance Next.js 14+ (App Router) / React web frontend in TypeScript with Tailwind CSS and Lucide icons that integrates with the {{ \App\SiteSetting::get('site_name', 'Zen X Download') }} REST API v1.
 
 ### GATEWAY CONNECTION
 - Base URL: {{ $baseUrl }}
@@ -279,7 +328,7 @@
                         <i class="fa fa-clone mr-1"></i> Copy Python Prompt for AI
                     </button>
                 </div>
-                <textarea id="prompt-python" class="form-control bg-dark text-light font-monospace small" rows="11" readonly style="resize: vertical; border-color: rgba(255,255,255,0.15); font-family: monospace;">Create a powerful, cross-platform Python command-line utility (CLI) using typer, rich, and requests that interacts with the Zen X Download REST API v1.
+                <textarea id="prompt-python" class="form-control bg-dark text-light font-monospace small" rows="11" readonly style="resize: vertical; border-color: rgba(255,255,255,0.15); font-family: monospace;">Create a powerful, cross-platform Python command-line utility (CLI) using typer, rich, and requests that interacts with the {{ \App\SiteSetting::get('site_name', 'Zen X Download') }} REST API v1.
 
 ### API SPECIFICATION
 - Base URL: {{ $baseUrl }}
@@ -292,6 +341,49 @@
      - Supports resuming broken downloads with HTTP Range headers.
   4. `zenx history`: Displays recently downloaded media files from /api/v1/download/history.
   5. `zenx status`: Checks server operational health from /api/v1/status.</textarea>
+            </div>
+
+            <!-- 6. Flutter (Dart) Prompt -->
+            <div class="tab-pane fade" id="tab-flutter" role="tabpanel">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span class="text-info small font-weight-bold">
+                        <i class="fa fa-mobile mr-1"></i> Mobile (Android & iOS): Flutter 3.x, Dart 3, Dio, Riverpod, Background Downloader, Notifications
+                    </span>
+                    <button class="btn btn-success btn-sm copy-prompt-btn" data-target="prompt-flutter">
+                        <i class="fa fa-clone mr-1"></i> Copy Flutter Prompt for AI
+                    </button>
+                </div>
+                <textarea id="prompt-flutter" class="form-control bg-dark text-light font-monospace small" rows="13" readonly style="resize: vertical; border-color: rgba(255,255,255,0.15); font-family: monospace;">Create a modern, high-performance cross-platform Flutter application (Android & iOS) in Dart 3 using Riverpod and Dio that connects to the {{ \App\SiteSetting::get('site_name', 'Zen X Download') }} REST API v1.
+
+### API SPECIFICATION & ARCHITECTURE
+- Base URL: {{ $baseUrl }}
+- Architecture: Feature-first Clean Architecture (Domain, Data, Presentation)
+- Recommended Packages: `dio`, `flutter_riverpod`, `path_provider`, `open_filex`, `permission_handler`, `flutter_local_notifications`, `device_info_plus`, `cached_network_image`.
+
+### CORE REQUIREMENTS
+1. Authentication & Device Flow:
+   - Generate unique persistent hardware UUID via `device_info_plus` and `shared_preferences`.
+   - On app launch, call POST `/api/v1/auth/register-device` with `client_id: zenx-android-v1`, `client_secret`, and `device_uuid`.
+   - Attach JWT `access_token` to all subsequent Dio requests via an `InterceptorsWrapper`.
+   - Handle 401 Unauthorized by auto-refreshing via POST `/api/v1/auth/refresh`.
+
+2. Media Extraction & Quality Picker:
+   - Provide a clean input bar with 1-tap clipboard paste button.
+   - Call POST `/api/v1/video/extract` with `{ "url": "<source_url>" }`.
+   - Render video card with thumbnail, title, and interactive Quality Selection Chips:
+     * 4K Ultra HD (2160p MP4)
+     * 1080p Full HD (avc1)
+     * 720p HD MP4
+     * High-Fidelity 320kbps MP3 Audio
+
+3. Background Merging & Progress Tracking:
+   - When user taps a quality option, call POST `/api/v1/download/start` with `{ "url": "...", "type": "video", "height": 1080 }` to receive `job_id`.
+   - Poll GET `/api/v1/download/jobs/{job_id}` every 1.5 seconds until `status == 'completed'`.
+   - Stream binary file from `stream_url` directly to device storage using `dio.download(..., onReceiveProgress: ...)`.
+   - Display real-time percentage bar, download speed (MB/s), and trigger a local push notification on completion with 1-tap "Open File" action via `open_filex`.
+
+4. Comprehensive Documentation:
+   - Complete project architecture and Dart source code available in docs/FLUTTER_INTEGRATION_GUIDE.md.</textarea>
             </div>
 
         </div>
@@ -403,7 +495,7 @@
                         <pre class="bg-light p-2 rounded small"><code>{
   "success": true,
   "data": {
-    "app_name": "Zen X Download",
+    "app_name": "{{ \App\SiteSetting::get('site_name', 'Zen X Download') }}",
     "supported_platforms": ["youtube", "facebook", "vimeo", "tiktok", "instagram"],
     "max_download_size_mb": 500,
     "retention_minutes": 15
@@ -870,6 +962,89 @@ $(document).ready(function() {
             btn.html(originalHtml);
         }, 2500);
     }
+
+    // Bulletproof Tab Switcher for AI Prompts
+    function initDocsTabs(navId, contentId) {
+        var nav = document.getElementById(navId);
+        var content = document.getElementById(contentId);
+        if (!nav || !content) return;
+
+        var tabLinks = nav.querySelectorAll('.nav-link');
+        var panes = content.querySelectorAll('.tab-pane');
+
+        function activateTab(targetId, updateUrl) {
+            if (!targetId) return;
+            var cleanId = targetId.replace(/^#/, '');
+            var targetPane = document.getElementById(cleanId);
+            if (!targetPane) return;
+
+            tabLinks.forEach(function(link) {
+                link.classList.remove('active');
+                link.setAttribute('aria-selected', 'false');
+            });
+
+            panes.forEach(function(pane) {
+                pane.classList.remove('show', 'active');
+                pane.style.display = 'none';
+            });
+
+            var activeLink = Array.from(tabLinks).find(function(link) {
+                var href = (link.getAttribute('href') || link.getAttribute('data-target') || link.getAttribute('data-bs-target') || '').replace(/^#/, '');
+                return href === cleanId;
+            });
+
+            if (activeLink) {
+                activeLink.classList.add('active');
+                activeLink.setAttribute('aria-selected', 'true');
+
+                var container = nav.closest('.tabs-scroll-container');
+                if (container) {
+                    var linkRect = activeLink.getBoundingClientRect();
+                    var contRect = container.getBoundingClientRect();
+                    if (linkRect.left < contRect.left || linkRect.right > contRect.right) {
+                        activeLink.scrollIntoView({ behavior: 'smooth', inline: 'nearest', block: 'nearest' });
+                    }
+                }
+            }
+
+            targetPane.style.display = 'block';
+            void targetPane.offsetHeight;
+            targetPane.classList.add('show', 'active');
+
+            if (updateUrl && window.history && window.history.replaceState) {
+                window.history.replaceState(null, null, '#' + cleanId);
+            }
+            try {
+                localStorage.setItem('zenx_tab_' + navId, cleanId);
+            } catch(e) {}
+        }
+
+        tabLinks.forEach(function(link) {
+            link.addEventListener('click', function(e) {
+                e.preventDefault();
+                var target = this.getAttribute('data-target') || this.getAttribute('data-bs-target') || this.getAttribute('href');
+                if (target) activateTab(target, true);
+            });
+        });
+
+        var hash = window.location.hash ? window.location.hash.replace(/^#/, '') : null;
+        var saved = null;
+        try { saved = localStorage.getItem('zenx_tab_' + navId); } catch(e) {}
+
+        if (hash && document.getElementById(hash)) {
+            activateTab(hash, false);
+        } else if (saved && document.getElementById(saved)) {
+            activateTab(saved, false);
+        } else {
+            var defaultLink = nav.querySelector('.nav-link.active') || tabLinks[0];
+            if (defaultLink) {
+                var target = defaultLink.getAttribute('data-target') || defaultLink.getAttribute('data-bs-target') || defaultLink.getAttribute('href');
+                if (target) activateTab(target, false);
+            }
+        }
+    }
+
+    initDocsTabs('aiPromptTabs', 'aiPromptTabsContent');
 });
 </script>
 @endsection

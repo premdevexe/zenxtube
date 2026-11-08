@@ -1,6 +1,10 @@
 @extends('app')
 
-@section('title', 'Contact Us - Zen X Download')
+@php
+    $siteName = \App\SiteSetting::get('site_name', config('app.name', 'Zen X Download'));
+@endphp
+
+@section('title', 'Contact Us - ' . $siteName)
 
 @section('content')
 <div class="bg-light py-4 py-md-5 border-bottom">

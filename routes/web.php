@@ -27,8 +27,23 @@ Route::get('about', "MainController@about")->name('about');
 Route::get('faq', "MainController@faq")->name('faq');
 Route::get('dmca', "MainController@dmca")->name('dmca');
 Route::get('how-to-download', "MainController@howToDownload")->name('how-to-download');
-Route::get('install', "MainController@install")->name('install');
-Route::get('installation', "MainController@install")->name('installation');
+Route::get('install-guide', "MainController@install")->name('install.guide');
+Route::get('installation-guide', "MainController@install")->name('installation.guide');
+Route::get('install', function() {
+    $stateManager = new \App\Services\Installer\InstallationStateManager();
+    if ($stateManager->isInstalled()) {
+        return redirect('/')->with('info', 'The application is already installed.');
+    }
+    return redirect()->route('installer.welcome');
+})->name('install');
+
+Route::get('installation', function() {
+    $stateManager = new \App\Services\Installer\InstallationStateManager();
+    if ($stateManager->isInstalled()) {
+        return redirect('/')->with('info', 'The application is already installed.');
+    }
+    return redirect()->route('installer.welcome');
+})->name('installation');
 Route::get('contact', "MainController@contact")->name('contact');
 Route::post('contact', "MainController@submitContact")->name('contact.submit');
 Route::get('docs', 'AdminApiController@docs')->name('docs');
@@ -46,6 +61,7 @@ Route::group(['prefix' => 'admin', 'middleware' => ['admin']], function () {
     
     Route::get('downloads', 'AdminController@downloads')->name('admin.downloads');
     Route::post('downloads/clear', 'AdminController@clearDownloads')->name('admin.downloads.clear');
+    Route::delete('downloads/{id}', 'AdminController@deleteDownload')->name('admin.downloads.delete');
     
     Route::get('messages', 'AdminController@messages')->name('admin.messages');
     Route::post('messages/{id}/status', 'AdminController@updateMessageStatus')->name('admin.messages.status');
@@ -56,6 +72,8 @@ Route::group(['prefix' => 'admin', 'middleware' => ['admin']], function () {
     Route::post('system/prune-downloads', 'AdminController@pruneOldStorage')->name('admin.system.prune-storage');
     Route::post('system/clear-cache', 'AdminController@clearCache')->name('admin.system.clear-cache');
     Route::post('system/purge-dummy-data', 'AdminController@purgeDummyData')->name('admin.system.purge-dummy-data');
+    Route::post('system/installer-reset', 'AdminController@resetInstaller')->name('admin.system.installer-reset');
+    Route::post('system/installer-lock', 'AdminController@lockInstaller')->name('admin.system.installer-lock');
     
     Route::get('notifications', 'AdminController@notifications')->name('admin.notifications');
     Route::post('notifications/send', 'AdminController@sendNotification')->name('admin.notifications.send');
@@ -73,6 +91,7 @@ Route::group(['prefix' => 'admin', 'middleware' => ['admin']], function () {
     Route::get('api', 'AdminApiController@index')->name('admin.api.index');
     Route::get('api/settings', 'AdminApiController@settings')->name('admin.api.settings');
     Route::post('api/settings', 'AdminApiController@updateSettings')->name('admin.api.settings.update');
+    Route::post('api/settings/auto-sync', 'AdminApiController@autoSyncBaseUrl')->name('admin.api.settings.auto_sync');
     Route::get('api/clients', 'AdminApiController@clients')->name('admin.api.clients');
     Route::post('api/clients', 'AdminApiController@createClient')->name('admin.api.clients.create');
     Route::post('api/clients/{id}/toggle', 'AdminApiController@toggleClient')->name('admin.api.clients.toggle');
@@ -87,3 +106,8 @@ Route::group(['prefix' => 'admin', 'middleware' => ['admin']], function () {
     Route::post('api/logs/clear', 'AdminApiController@clearLogs')->name('admin.api.logs.clear');
     Route::get('api/docs', 'AdminApiController@docs')->name('admin.api.docs');
 });
+
+// Installation Wizard Routes
+if (file_exists(base_path('routes/installer.php'))) {
+    require base_path('routes/installer.php');
+}

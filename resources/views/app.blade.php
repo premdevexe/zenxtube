@@ -353,7 +353,7 @@
           if (permission === 'granted') {
             try {
               new Notification('Notifications Enabled! 🎉', {
-                body: 'You are subscribed to instant updates and downloads from Zen X Download.',
+                body: 'You are subscribed to instant updates and downloads from ' + @json($siteName) + '.',
                 icon: '{{ url("favicon.ico") }}'
               });
             } catch (e) {}

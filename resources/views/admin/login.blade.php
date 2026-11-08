@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-    <title>Admin Login - Zen X Download</title>
+    <title>Admin Login - {{ \App\SiteSetting::get('site_name', 'Zen X Download') }}</title>
 
     <!-- Favicon -->
     <link rel="icon" type="image/svg+xml" href="{{ \App\SiteSetting::assetPath('site_favicon', 'images/logo-icon.svg') }}">
@@ -136,7 +136,7 @@
 
             <div class="text-center mt-3">
                 <a href="{{ url('/') }}" class="small text-muted text-decoration-none">
-                    <i class="fa fa-arrow-left"></i> Return to Zen X Download Homepage
+                    <i class="fa fa-arrow-left"></i> Return to {{ \App\SiteSetting::get('site_name', 'Zen X Download') }} Homepage
                 </a>
             </div>
         </div>

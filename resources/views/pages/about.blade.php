@@ -1,6 +1,10 @@
 @extends('app')
 
-@section('title', 'About Us - Zen X Download')
+@php
+    $siteName = \App\SiteSetting::get('site_name', config('app.name', 'Zen X Download'));
+@endphp
+
+@section('title', 'About Us - ' . $siteName)
 
 @section('content')
 <div class="bg-light py-4 py-md-5 border-bottom">
@@ -8,7 +12,7 @@
         <span class="badge badge-primary px-3 py-1 font-weight-bold mb-2" style="border-radius: 12px; font-size: 0.78rem;">
             <i class="fa fa-bolt"></i> FAST & SECURE MEDIA ENGINE
         </span>
-        <h1 class="h3 font-weight-bold text-dark mb-1">About Zen X Download</h1>
+        <h1 class="h3 font-weight-bold text-dark mb-1">About {{ $siteName }}</h1>
         <p class="text-muted small mb-0">High-speed, privacy-first online video & audio downloader</p>
     </div>
 </div>
@@ -22,14 +26,14 @@
                         <div class="col-md-8">
                             <h3 class="font-weight-bold text-dark mb-3">Our Mission</h3>
                             <p class="text-secondary lead" style="font-size: 1.05rem;">
-                                <strong>Zen X Download</strong> was built with a single goal: to provide an ultra-fast, unrestricted, and completely safe way to save and convert online media without intrusive adware, forced software installations, or bandwidth throttling.
+                                <strong>{{ $siteName }}</strong> was built with a single goal: to provide an ultra-fast, unrestricted, and completely safe way to save and convert online media without intrusive adware, forced software installations, or bandwidth throttling.
                             </p>
                             <p class="text-secondary">
-                                Unlike traditional downloader utilities that bombard visitors with deceptive redirect ads, pop-ups, and slow download caps, Zen X Download prioritizes clean user experience, instant multi-threaded streaming, and strict user privacy.
+                                Unlike traditional downloader utilities that bombard visitors with deceptive redirect ads, pop-ups, and slow download caps, {{ $siteName }} prioritizes clean user experience, instant multi-threaded streaming, and strict user privacy.
                             </p>
                         </div>
                         <div class="col-md-4 text-center my-3 my-md-0">
-                            <img src="{{ \App\SiteSetting::assetPath('site_logo', 'images/logo-icon.svg') }}" alt="{{ \App\SiteSetting::get('site_name', 'Zen X Download') }} Emblem" class="img-fluid" style="max-width: 140px; filter: drop-shadow(0 10px 15px rgba(0, 98, 224, 0.2));">
+                            <img src="{{ \App\SiteSetting::assetPath('site_logo', 'images/logo-icon.svg') }}" alt="{{ $siteName }} Emblem" class="img-fluid" style="max-width: 140px; filter: drop-shadow(0 10px 15px rgba(0, 98, 224, 0.2));">
                         </div>
                     </div>
                 </section>
@@ -57,7 +61,7 @@
                                     <i class="fa fa-film text-info mr-1"></i> True 4K, 1080p & 60FPS Merging
                                 </h6>
                                 <p class="text-muted small mb-0">
-                                    Many downloaders fail on 1080p and 4K YouTube videos because YouTube stores video and audio tracks separately. Zen X Download automatically combines pristine video and audio on-the-fly.
+                                    Many downloaders fail on 1080p and 4K YouTube videos because YouTube stores video and audio tracks separately. {{ $siteName }} automatically combines pristine video and audio on-the-fly.
                                 </p>
                             </div>
                         </div>
@@ -88,7 +92,7 @@
 
                 <section class="mb-4">
                     <h4 class="font-weight-bold text-dark border-bottom pb-2 mb-3">
-                        <i class="fa fa-check-circle text-success mr-1"></i> How Zen X Download Compares
+                        <i class="fa fa-check-circle text-success mr-1"></i> How {{ $siteName }} Compares
                     </h4>
 
                     <div class="table-responsive">
@@ -96,7 +100,7 @@
                             <thead class="thead-light">
                                 <tr>
                                     <th class="text-left">Feature</th>
-                                    <th class="text-primary font-weight-bold">Zen X Download</th>
+                                    <th class="text-primary font-weight-bold">{{ $siteName }}</th>
                                     <th class="text-muted">Other Converters</th>
                                 </tr>
                             </thead>

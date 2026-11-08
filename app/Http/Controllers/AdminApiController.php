@@ -55,7 +55,7 @@ class AdminApiController extends Controller
 
         // Maintenance status
         $isMaintenance = (bool)ApiSetting::get('api_maintenance_mode', false);
-        $baseUrl = ApiSetting::get('api_base_url', url('/api/v1'));
+        $baseUrl = ApiSetting::getBaseUrl();
 
         return view('admin.api.index', compact(
             'metrics',
@@ -73,8 +73,9 @@ class AdminApiController extends Controller
     public function settings()
     {
         $settings = ApiSetting::all()->keyBy('key');
+        $baseUrl = ApiSetting::getBaseUrl();
 
-        return view('admin.api.settings', compact('settings'));
+        return view('admin.api.settings', compact('settings', 'baseUrl'));
     }
 
     /**
@@ -331,8 +332,26 @@ class AdminApiController extends Controller
      */
     public function docs()
     {
-        $baseUrl = ApiSetting::get('api_base_url', url('/api/v1'));
+        $baseUrl = ApiSetting::getBaseUrl();
 
         return view('admin.api.docs', compact('baseUrl'));
+    }
+
+    /**
+     * Auto-detect and sync API base URL with current domain/live host.
+     */
+    public function autoSyncBaseUrl(Request $request)
+    {
+        $liveUrl = ApiSetting::syncBaseUrlWithCurrentHost();
+
+        if ($request->ajax() || $request->wantsJson()) {
+            return response()->json([
+                'success' => true,
+                'base_url' => $liveUrl,
+                'message' => 'API Base URL automatically detected and synced with current host: ' . $liveUrl
+            ]);
+        }
+
+        return redirect()->back()->with('success', 'API Base URL successfully updated to: ' . $liveUrl);
     }
 }

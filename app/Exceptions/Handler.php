@@ -46,6 +46,42 @@ class Handler extends ExceptionHandler
      */
     public function render($request, Exception $exception)
     {
+        if ($request->is('api/*') || $request->wantsJson()) {
+            $status = 500;
+
+            if ($exception instanceof \Illuminate\Validation\ValidationException) {
+                return response()->json([
+                    'success' => false,
+                    'code' => 422,
+                    'message' => 'Validation failed.',
+                    'errors' => $exception->errors(),
+                ], 422);
+            }
+
+            if ($exception instanceof \Illuminate\Database\Eloquent\ModelNotFoundException ||
+                $exception instanceof \Symfony\Component\HttpKernel\Exception\NotFoundHttpException) {
+                return response()->json([
+                    'success' => false,
+                    'code' => 404,
+                    'message' => 'The requested API resource or endpoint was not found.',
+                ], 404);
+            }
+
+            if (method_exists($exception, 'getStatusCode')) {
+                $status = $exception->getStatusCode();
+            }
+
+            $message = config('app.debug')
+                ? $exception->getMessage()
+                : ($status === 500 ? 'An unexpected server error occurred.' : $exception->getMessage());
+
+            return response()->json([
+                'success' => false,
+                'code' => $status,
+                'message' => $message ?: 'An error occurred.',
+            ], $status);
+        }
+
         return parent::render($request, $exception);
     }
 }

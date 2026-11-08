@@ -1,6 +1,11 @@
 @extends('app')
 
-@section('title', 'DMCA & Copyright Policy - Zen X Download')
+@php
+    $siteName = \App\SiteSetting::get('site_name', config('app.name', 'Zen X Download'));
+    $supportEmail = \App\SiteSetting::get('support_email', 'support@' . (request() ? request()->getHost() : 'zenxdownload.com'));
+@endphp
+
+@section('title', 'DMCA & Copyright Policy - ' . $siteName)
 
 @section('content')
 <div class="bg-light py-4 py-md-5 border-bottom">
@@ -20,19 +25,19 @@
                 <section class="mb-4">
                     <h4 class="font-weight-bold text-dark border-bottom pb-2">1. Notice of Copyright Compliance</h4>
                     <p class="text-secondary">
-                        <strong>Zen X Download</strong> respects the intellectual property rights of others and strictly complies with the provisions of the Digital Millennium Copyright Act (Title 17, United States Code, Section 512, "DMCA") and corresponding international copyright treaties. It is our policy to respond expeditiously to valid notices of alleged infringement and take appropriate action under applicable intellectual property laws.
+                        <strong>{{ $siteName }}</strong> respects the intellectual property rights of others and strictly complies with the provisions of the Digital Millennium Copyright Act (Title 17, United States Code, Section 512, "DMCA") and corresponding international copyright treaties. It is our policy to respond expeditiously to valid notices of alleged infringement and take appropriate action under applicable intellectual property laws.
                     </p>
                 </section>
 
                 <section class="mb-4">
                     <h4 class="font-weight-bold text-dark border-bottom pb-2">2. Nature of the Service & Technical Role</h4>
                     <p class="text-secondary">
-                        Zen X Download operates solely as an automated technical utility and conversion gateway. Please note the following key operational facts:
+                        {{ $siteName }} operates solely as an automated technical utility and conversion gateway. Please note the following key operational facts:
                     </p>
                     <ul class="text-secondary">
-                        <li><strong>No Media Hosting:</strong> Zen X Download does not host, upload, archive, index, or store video or audio files on its servers. All files processed are transiently accessed directly from public hosting platforms (such as YouTube, Facebook, Twitter, etc.) based upon user-supplied URLs.</li>
+                        <li><strong>No Media Hosting:</strong> {{ $siteName }} does not host, upload, archive, index, or store video or audio files on its servers. All files processed are transiently accessed directly from public hosting platforms (such as YouTube, Facebook, Twitter, etc.) based upon user-supplied URLs.</li>
                         <li><strong>Transitory Digital Network Communications:</strong> We operate strictly as an intermediary conduit under Section 512(a) of the DMCA.</li>
-                        <li><strong>User Responsibility:</strong> Users of our service are required by our <a href="{{ route('terms') }}">Terms of Service</a> to possess the legal right or permission to download any content. Zen X Download does not endorse or authorize unauthorized reproduction of copyrighted works.</li>
+                        <li><strong>User Responsibility:</strong> Users of our service are required by our <a href="{{ route('terms') }}">Terms of Service</a> to possess the legal right or permission to download any content. {{ $siteName }} does not endorse or authorize unauthorized reproduction of copyrighted works.</li>
                     </ul>
                 </section>
 
@@ -60,8 +65,8 @@
                     </p>
                     <div class="card bg-light border p-3">
                         <p class="mb-1 text-dark"><strong>DMCA Compliance Team & Copyright Agent</strong></p>
-                        <p class="mb-1 text-secondary small">Zen X Download Operations</p>
-                        <p class="mb-2 text-secondary small">Email: <code>dmca@zenxdownload.com</code></p>
+                        <p class="mb-1 text-secondary small">{{ $siteName }} Operations</p>
+                        <p class="mb-2 text-secondary small">Email: <code>{{ $supportEmail }}</code></p>
                         <div>
                             <a href="{{ route('contact') }}" class="btn btn-sm btn-outline-primary font-weight-bold">
                                 <i class="fa fa-envelope-o mr-1"></i> Submit DMCA Notice Online

@@ -5,117 +5,109 @@
 @section('content')
 
 @php
-    $tagline = \App\SiteSetting::get('site_tagline', 'Ultra-Fast Engine & Zero Lag');
+    $tagline = \App\SiteSetting::get('site_tagline', 'Direct stream extraction & conversion');
     $platforms = [
-        \App\SiteSetting::get('feat_youtube') === '1'   ? ['label' => 'YouTube', 'icon' => 'fa-youtube-play', 'color' => 'text-danger', 'i' => 1] : null,
-        \App\SiteSetting::get('feat_facebook') === '1'  ? ['label' => 'Facebook', 'icon' => 'fa-facebook-official', 'color' => 'text-primary', 'i' => 1] : null,
-        \App\SiteSetting::get('feat_instagram') === '1' ? ['label' => 'Instagram', 'icon' => 'fa-instagram', 'color' => 'text-danger', 'i' => 1] : null,
-        \App\SiteSetting::get('feat_twitter') === '1'   ? ['label' => 'Twitter / X', 'icon' => 'fa-twitter', 'color' => 'text-info', 'i' => 1] : null,
-        \App\SiteSetting::get('feat_vimeo') === '1'     ? ['label' => 'Vimeo', 'icon' => 'fa-vimeo', 'color' => 'text-info', 'i' => 1] : null,
-        \App\SiteSetting::get('feat_mp3') === '1'       ? ['label' => 'MP3 Audio', 'icon' => 'fa-music', 'color' => 'text-warning', 'i' => 1] : null,
-        \App\SiteSetting::get('feat_mp4_4k') === '1'    ? ['label' => '1080p / 4K MP4', 'icon' => 'fa-film', 'color' => 'text-success', 'i' => 1] : null,
+        \App\SiteSetting::get('feat_youtube') === '1'   ? ['label' => 'YouTube', 'icon' => 'fa-youtube-play'] : null,
+        \App\SiteSetting::get('feat_facebook') === '1'  ? ['label' => 'Facebook', 'icon' => 'fa-facebook-official'] : null,
+        \App\SiteSetting::get('feat_instagram') === '1' ? ['label' => 'Instagram', 'icon' => 'fa-instagram'] : null,
+        \App\SiteSetting::get('feat_twitter') === '1'   ? ['label' => 'Twitter / X', 'icon' => 'fa-twitter'] : null,
+        \App\SiteSetting::get('feat_vimeo') === '1'     ? ['label' => 'Vimeo', 'icon' => 'fa-vimeo'] : null,
+        \App\SiteSetting::get('feat_mp3') === '1'       ? ['label' => 'MP3 Audio', 'icon' => 'fa-music'] : null,
+        \App\SiteSetting::get('feat_mp4_4k') === '1'    ? ['label' => '4K / 1080p MP4', 'icon' => 'fa-film'] : null,
     ];
     $platforms = array_filter($platforms);
 @endphp
 
     <!-- Hero Section -->
-    <div class="jumbotron jumbotron-fluid bg-white border-bottom mb-0 py-4 py-md-5" style="box-shadow: inset 0 -10px 20px -10px rgba(0,0,0,0.03);">
-        <div class="container text-center py-2 py-md-4 px-3 px-sm-4">
-            <span class="badge badge-primary px-3 py-2 text-uppercase mb-3 font-weight-bold" style="letter-spacing: 0.5px; border-radius: 20px; font-size: 0.78rem;">
-                <i class="fa fa-bolt"></i> {{ $tagline }}
-            </span>
-            <h1 class="hero-title text-dark mb-2">Online Video & Audio Downloader</h1>
-            <p class="hero-lead mx-auto mb-4" style="max-width: 680px;">
-                Download high-quality videos in <strong>4K, 1080p, 720p MP4</strong> and convert to <strong>High-Quality MP3</strong> from YouTube, Facebook, Twitter, and other public sites.
+    <section class="bg-white border-bottom py-5">
+        <div class="container text-center py-2 px-3 px-sm-4" style="max-width: 840px;">
+            <h1 class="h2 fw-semibold text-dark mb-2" style="letter-spacing: -0.025em;">Online Video and Audio Extraction</h1>
+            <p class="text-secondary mx-auto mb-4 small" style="max-width: 620px; line-height: 1.55;">
+                Download public media in <strong>4K, 1080p, 720p MP4</strong> or extract original audio tracks to <strong>320kbps MP3</strong> without ads or registration.
             </p>
 
             @if(isset($errors) && $errors->any())
-                <div class="alert alert-danger col-md-9 col-lg-8 mx-auto text-center shadow-sm" role="alert">
-                    <i class="fa fa-exclamation-triangle"></i> {{ $errors->first() }}
+                <div class="alert alert-danger mx-auto text-left py-2 px-3 mb-3 small rounded" role="alert" style="max-width: 680px;">
+                    <i class="fa fa-exclamation-circle text-danger mr-1"></i> {{ $errors->first() }}
                 </div>
             @endif
 
-            <form id="fd" action="{{ url('download') }}" method="post" onsubmit="handleSearchSubmit(this)" class="col-md-10 col-lg-8 mx-auto p-0">
+            <form id="fd" action="{{ url('download') }}" method="post" onsubmit="handleSearchSubmit(this)" class="mx-auto p-0" style="max-width: 680px;">
                 {{ csrf_field() }}
-                <div class="input-group responsive-search-box shadow-sm">
+                <div class="input-group search-studio-group">
                     <input name="videourl" 
                            required 
-                           class="form-control responsive-search-input px-3 px-sm-4" 
-                           placeholder="Paste YouTube, Facebook, or video link here..." 
+                           class="form-control font-mono py-2 px-3" 
+                           placeholder="Paste video or playlist URL here..." 
                            type="text" 
+                           style="border-radius: 8px 0 0 8px; border: 1px solid rgba(17,24,39,0.18); font-size: 0.88rem;"
                            autofocus>
                     <div class="input-group-append">
-                        <button id="homeSubmitBtn" class="btn btn-primary responsive-search-btn">
-                            <i class="fa fa-cloud-download mr-1" aria-hidden="true"></i> Download
+                        <button id="homeSubmitBtn" class="btn btn-dark px-4" style="border-radius: 0 8px 8px 0; font-size: 0.88rem; font-weight: 500;">
+                            <span>Fetch stream</span>
                         </button>
                     </div>
                 </div>
-                <div class="d-flex justify-content-center flex-wrap mt-3 text-muted small">
-                    <span class="mx-2 mb-1"><i class="fa fa-check-circle text-success"></i> No registration</span>
-                    <span class="mx-2 mb-1"><i class="fa fa-check-circle text-success"></i> 100% Free & Safe</span>
-                    <span class="mx-2 mb-1"><i class="fa fa-check-circle text-success"></i> 8-Thread Speed</span>
-                    <span class="mx-2 mb-1"><i class="fa fa-check-circle text-success"></i> Unlimited</span>
+
+                <div class="d-flex justify-content-center flex-wrap align-items-center mt-3 text-muted small font-mono" style="font-size: 0.76rem; gap: 16px;">
+                    <span>&bull; No accounts required</span>
+                    <span>&bull; Lossless remuxing</span>
+                    <span>&bull; 15-minute transient purge</span>
                 </div>
             </form>
         </div>
-    </div>
+    </section>
 
-    <!-- Supported Platforms Grid -->
-    <div class="bg-light py-3 py-md-4 border-bottom">
+    <!-- Platform Compatibility Strip -->
+    <div class="bg-light py-3 border-bottom">
         <div class="container text-center px-3">
-            <span class="text-uppercase small font-weight-bold text-muted d-block mb-3" style="letter-spacing: 1px; font-size: 0.75rem;">Supported Platforms & Formats</span>
-            <div class="d-flex justify-content-center flex-wrap align-items-center">
+            <div class="d-flex justify-content-center flex-wrap align-items-center" style="gap: 8px;">
+                <span class="text-secondary small font-mono mr-2" style="font-size: 0.74rem;">[SOURCES]</span>
                 @foreach($platforms as $p)
-                    <span class="badge badge-white border px-3 py-2 m-1 font-weight-bold text-dark shadow-sm">
-                        <i class="fa {{ $p['icon'] }} {{ $p['color'] }} mr-1"></i> {{ $p['label'] }}
+                    <span class="badge badge-light border text-secondary font-mono px-2 py-1" style="font-size: 0.75rem; font-weight: 500;">
+                        <i class="fa {{ $p['icon'] }} text-muted mr-1"></i> {{ $p['label'] }}
                     </span>
                 @endforeach
             </div>
         </div>
     </div>
 
-    <!-- How It Works Section -->
+    <!-- Extraction Workflow -->
     <section class="py-5 bg-white border-bottom" id="how-to-download">
-        <div class="container px-3 px-sm-4">
-            <div class="text-center mb-4 mb-md-5">
-                <span class="badge badge-info px-3 py-1 text-uppercase font-weight-bold mb-2" style="font-size: 0.75rem;">Simple 3-Step Process</span>
-                <h2 class="h3 font-weight-bold text-dark">How to Download Videos in Seconds</h2>
-                <p class="text-muted small">Save your favorite videos and audio tracks with just three easy steps.</p>
+        <div class="container px-3 px-sm-4" style="max-width: 960px;">
+            <div class="mb-4">
+                <div class="font-mono text-muted small mb-1" style="font-size: 0.72rem;">[PIPELINE]</div>
+                <h2 class="h5 fw-semibold text-dark mb-1">Three-step processing flow</h2>
+                <p class="text-secondary small mb-0">How the conversion pipeline handles public stream extraction.</p>
             </div>
 
-            <div class="row text-center">
-                <div class="col-md-4 col-12 mb-4">
-                    <div class="card h-100 border-0 shadow-sm p-4 text-center">
-                        <div class="mx-auto mb-3 d-flex align-items-center justify-content-center" style="width: 60px; height: 60px; border-radius: 50%; background: rgba(0, 98, 224, 0.1); color: #0062E0; font-size: 24px; font-weight: bold;">
-                            1
-                        </div>
-                        <h5 class="font-weight-bold text-dark">Copy Video URL</h5>
-                        <p class="text-secondary small mb-0">
-                            Navigate to YouTube, Facebook, or your preferred platform and copy the link of the video you wish to download.
+            <div class="row g-3">
+                <div class="col-md-4 col-12 mb-3 mb-md-0">
+                    <div class="p-3 border rounded h-100 bg-white">
+                        <div class="font-mono text-muted small mb-2 fw-semibold">01 / LINK</div>
+                        <h3 class="h6 fw-semibold text-dark mb-1">Copy source link</h3>
+                        <p class="text-secondary small mb-0" style="line-height: 1.5;">
+                            Copy the video or audio URL directly from YouTube, Twitter/X, Facebook, or supported streaming hosts.
                         </p>
                     </div>
                 </div>
 
-                <div class="col-md-4 col-12 mb-4">
-                    <div class="card h-100 border-0 shadow-sm p-4 text-center">
-                        <div class="mx-auto mb-3 d-flex align-items-center justify-content-center" style="width: 60px; height: 60px; border-radius: 50%; background: rgba(40, 167, 69, 0.1); color: #28a745; font-size: 24px; font-weight: bold;">
-                            2
-                        </div>
-                        <h5 class="font-weight-bold text-dark">Paste & Choose Format</h5>
-                        <p class="text-secondary small mb-0">
-                            Paste the link into the search bar above and click Download. Select your desired resolution (4K, 1080p, 720p, or MP3 audio).
+                <div class="col-md-4 col-12 mb-3 mb-md-0">
+                    <div class="p-3 border rounded h-100 bg-white">
+                        <div class="font-mono text-muted small mb-2 fw-semibold">02 / FORMAT</div>
+                        <h3 class="h6 fw-semibold text-dark mb-1">Select codec &amp; bitrate</h3>
+                        <p class="text-secondary small mb-0" style="line-height: 1.5;">
+                            Inspect available media representations: resolutions up to 4K (2160p), 1080p 60fps, or standalone 320kbps MP3 audio.
                         </p>
                     </div>
                 </div>
 
-                <div class="col-md-4 col-12 mb-4">
-                    <div class="card h-100 border-0 shadow-sm p-4 text-center">
-                        <div class="mx-auto mb-3 d-flex align-items-center justify-content-center" style="width: 60px; height: 60px; border-radius: 50%; background: rgba(255, 193, 7, 0.15); color: #d39e00; font-size: 24px; font-weight: bold;">
-                            3
-                        </div>
-                        <h5 class="font-weight-bold text-dark">Download Instantly</h5>
-                        <p class="text-secondary small mb-0">
-                            Our high-speed 8-thread engine merges audio and video streams and initiates your file download right in your browser.
+                <div class="col-md-4 col-12">
+                    <div class="p-3 border rounded h-100 bg-white">
+                        <div class="font-mono text-muted small mb-2 fw-semibold">03 / STREAM</div>
+                        <h3 class="h6 fw-semibold text-dark mb-1">Direct file transfer</h3>
+                        <p class="text-secondary small mb-0" style="line-height: 1.5;">
+                            Multi-threaded remuxing joins separate video and audio channels without lossy transcode delays.
                         </p>
                     </div>
                 </div>
@@ -123,72 +115,56 @@
         </div>
     </section>
 
-    <!-- Key Features Section -->
+    <!-- Technical Architecture & Features -->
     <section class="py-5 bg-light border-bottom" id="features">
-        <div class="container px-3 px-sm-4">
-            <div class="text-center mb-4 mb-md-5">
-                <span class="badge badge-primary px-3 py-1 text-uppercase font-weight-bold mb-2" style="font-size: 0.75rem;">Why Zen X Download</span>
-                <h2 class="h3 font-weight-bold text-dark">Built for Maximum Speed & Quality</h2>
-                <p class="text-muted small">Experience fast, clean video conversion with zero compromise on privacy.</p>
+        <div class="container px-3 px-sm-4" style="max-width: 960px;">
+            <div class="mb-4">
+                <div class="font-mono text-muted small mb-1" style="font-size: 0.72rem;">[ARCHITECTURE]</div>
+                <h2 class="h5 fw-semibold text-dark mb-1">Engine characteristics</h2>
+                <p class="text-secondary small mb-0">High-throughput, privacy-focused media infrastructure specifications.</p>
             </div>
 
-            <div class="row">
-                <div class="col-lg-4 col-md-6 col-12 mb-4">
-                    <div class="card h-100 border-0 shadow-sm p-4">
-                        <div class="mb-3 text-primary"><i class="fa fa-bolt fa-2x"></i></div>
-                        <h5 class="font-weight-bold text-dark">High-Speed Multi-Threading</h5>
-                        <p class="text-secondary small mb-0">
-                            Utilizes 8 concurrent fragment connections and direct stream remuxing to deliver downloads at your maximum internet connection speed.
+            <div class="row g-3">
+                <div class="col-md-6 col-12 mb-3">
+                    <div class="p-3 bg-white border rounded h-100">
+                        <div class="d-flex align-items-center gap-2 mb-2">
+                            <span class="font-mono text-dark fw-semibold small">01. Multi-threaded fragment fetching</span>
+                        </div>
+                        <p class="text-secondary small mb-0" style="line-height: 1.5;">
+                            Splits media downloads into 8 concurrent chunk streams via yt-dlp, bypassing single-connection CDN bandwidth throttles.
                         </p>
                     </div>
                 </div>
 
-                <div class="col-lg-4 col-md-6 col-12 mb-4">
-                    <div class="card h-100 border-0 shadow-sm p-4">
-                        <div class="mb-3 text-success"><i class="fa fa-shield fa-2x"></i></div>
-                        <h5 class="font-weight-bold text-dark">100% Privacy Protected</h5>
-                        <p class="text-secondary small mb-0">
-                            No account required, no file retention, and no tracking cookies. All processing is transient, safe, and protected by SSL encryption.
+                <div class="col-md-6 col-12 mb-3">
+                    <div class="p-3 bg-white border rounded h-100">
+                        <div class="d-flex align-items-center gap-2 mb-2">
+                            <span class="font-mono text-dark fw-semibold small">02. Ephemeral storage isolation</span>
+                        </div>
+                        <p class="text-secondary small mb-0" style="line-height: 1.5;">
+                            No permanent media retention. Converted files in <code>storage/app/downloads</code> are automatically purged after 15 minutes.
                         </p>
                     </div>
                 </div>
 
-                <div class="col-lg-4 col-md-6 col-12 mb-4">
-                    <div class="card h-100 border-0 shadow-sm p-4">
-                        <div class="mb-3 text-warning"><i class="fa fa-headphones fa-2x"></i></div>
-                        <h5 class="font-weight-bold text-dark">Lossless Audio Extraction</h5>
-                        <p class="text-secondary small mb-0">
-                            Extract crystal-clear MP3 audio directly from music videos and podcasts with 4-core multi-threaded audio processing.
+                <div class="col-md-6 col-12 mb-3 mb-md-0">
+                    <div class="p-3 bg-white border rounded h-100">
+                        <div class="d-flex align-items-center gap-2 mb-2">
+                            <span class="font-mono text-dark fw-semibold small">03. Lossless audio extraction</span>
+                        </div>
+                        <p class="text-secondary small mb-0" style="line-height: 1.5;">
+                            Demuxes audio streams directly to MP3 and M4A containers preserving source sample rate and dynamic range.
                         </p>
                     </div>
                 </div>
 
-                <div class="col-lg-4 col-md-6 col-12 mb-4">
-                    <div class="card h-100 border-0 shadow-sm p-4">
-                        <div class="mb-3 text-info"><i class="fa fa-television fa-2x"></i></div>
-                        <h5 class="font-weight-bold text-dark">Full HD & 4K Ready</h5>
-                        <p class="text-secondary small mb-0">
-                            Full support for 1080p, 1440p, and 2160p (4K) videos with synchronized sound included through high-speed FFmpeg muxing.
-                        </p>
-                    </div>
-                </div>
-
-                <div class="col-lg-4 col-md-6 col-12 mb-4">
-                    <div class="card h-100 border-0 shadow-sm p-4">
-                        <div class="mb-3 text-danger"><i class="fa fa-mobile fa-2x"></i></div>
-                        <h5 class="font-weight-bold text-dark">Mobile & Desktop Friendly</h5>
-                        <p class="text-secondary small mb-0">
-                            Works smoothly on iOS, Android, macOS, Windows, Linux, and all major web browsers without requiring browser extensions.
-                        </p>
-                    </div>
-                </div>
-
-                <div class="col-lg-4 col-md-6 col-12 mb-4">
-                    <div class="card h-100 border-0 shadow-sm p-4">
-                        <div class="mb-3 text-secondary"><i class="fa fa-list-alt fa-2x"></i></div>
-                        <h5 class="font-weight-bold text-dark">Playlist Support</h5>
-                        <p class="text-secondary small mb-0">
-                            Paste public playlist links to easily browse and select individual videos for rapid batch downloading.
+                <div class="col-md-6 col-12">
+                    <div class="p-3 bg-white border rounded h-100">
+                        <div class="d-flex align-items-center gap-2 mb-2">
+                            <span class="font-mono text-dark fw-semibold small">04. 4K high-efficiency muxing</span>
+                        </div>
+                        <p class="text-secondary small mb-0" style="line-height: 1.5;">
+                            Automated FFmpeg muxing merges isolated adaptive 1080p, 1440p, and 2160p video streams with high-bitrate Opus/AAC audio.
                         </p>
                     </div>
                 </div>
@@ -196,76 +172,63 @@
         </div>
     </section>
 
-    <!-- FAQ Section -->
+    <!-- Frequently Asked Questions -->
     <section class="py-5 bg-white" id="faq">
-        <div class="container px-3 px-sm-4">
-            <div class="text-center mb-4 mb-md-5">
-                <span class="badge badge-secondary px-3 py-1 text-uppercase font-weight-bold mb-2" style="font-size: 0.75rem;">Common Questions</span>
-                <h2 class="h3 font-weight-bold text-dark">Frequently Asked Questions</h2>
-                <p class="text-muted small">Everything you need to know about Zen X Download.</p>
+        <div class="container px-3 px-sm-4" style="max-width: 840px;">
+            <div class="mb-4">
+                <div class="font-mono text-muted small mb-1" style="font-size: 0.72rem;">[DOCUMENTATION]</div>
+                <h2 class="h5 fw-semibold text-dark mb-1">Frequently asked questions</h2>
             </div>
 
-            <div class="row justify-content-center">
-                <div class="col-lg-8 col-12">
-                    <div class="accordion" id="faqAccordion">
-                        <div class="card border mb-2 shadow-sm">
-                            <div class="card-header bg-white py-3" id="faq1">
-                                <h5 class="mb-0">
-                                    <button class="btn btn-link text-dark font-weight-bold text-left d-block w-100 p-0 text-decoration-none" type="button" data-toggle="collapse" data-target="#collapse1" aria-expanded="true" aria-controls="collapse1">
-                                        <i class="fa fa-question-circle text-primary mr-2"></i> Is Zen X Download completely free to use?
-                                    </button>
-                                </h5>
-                            </div>
-                            <div id="collapse1" class="collapse show" aria-labelledby="faq1" data-parent="#faqAccordion">
-                                <div class="card-body text-secondary small">
-                                    Yes! Zen X Download is 100% free with unlimited downloads. There are no subscription fees, registration walls, or hidden limits.
-                                </div>
-                            </div>
+            <div class="accordion" id="faqAccordion">
+                <div class="card border rounded mb-2">
+                    <div class="card-header bg-white py-2 px-3" id="faq1">
+                        <button class="btn btn-link text-dark fw-medium text-left d-block w-100 p-0 text-decoration-none small" type="button" data-toggle="collapse" data-target="#collapse1" aria-expanded="true">
+                            Is {{ \App\SiteSetting::get('site_name', 'Zen X Download') }} free to use?
+                        </button>
+                    </div>
+                    <div id="collapse1" class="collapse show" data-parent="#faqAccordion">
+                        <div class="card-body text-secondary small py-2 px-3 border-top bg-light">
+                            Yes. The platform operates without registration walls, subscription requirements, or rate caps on public downloads.
                         </div>
+                    </div>
+                </div>
 
-                        <div class="card border mb-2 shadow-sm">
-                            <div class="card-header bg-white py-3" id="faq2">
-                                <h5 class="mb-0">
-                                    <button class="btn btn-link text-dark font-weight-bold text-left d-block w-100 p-0 text-decoration-none collapsed" type="button" data-toggle="collapse" data-target="#collapse2" aria-expanded="false" aria-controls="collapse2">
-                                        <i class="fa fa-question-circle text-primary mr-2"></i> Where are my downloaded files saved?
-                                    </button>
-                                </h5>
-                            </div>
-                            <div id="collapse2" class="collapse" aria-labelledby="faq2" data-parent="#faqAccordion">
-                                <div class="card-body text-secondary small">
-                                    Downloaded files are saved directly into your device's default "Downloads" folder, or the custom folder designated in your web browser preferences.
-                                </div>
-                            </div>
+                <div class="card border rounded mb-2">
+                    <div class="card-header bg-white py-2 px-3" id="faq2">
+                        <button class="btn btn-link text-dark fw-medium text-left d-block w-100 p-0 text-decoration-none small collapsed" type="button" data-toggle="collapse" data-target="#collapse2" aria-expanded="false">
+                            Where are downloaded files stored?
+                        </button>
+                    </div>
+                    <div id="collapse2" class="collapse" data-parent="#faqAccordion">
+                        <div class="card-body text-secondary small py-2 px-3 border-top bg-light">
+                            Files are streamed directly to your browser's designated local download directory.
                         </div>
+                    </div>
+                </div>
 
-                        <div class="card border mb-2 shadow-sm">
-                            <div class="card-header bg-white py-3" id="faq3">
-                                <h5 class="mb-0">
-                                    <button class="btn btn-link text-dark font-weight-bold text-left d-block w-100 p-0 text-decoration-none collapsed" type="button" data-toggle="collapse" data-target="#collapse3" aria-expanded="false" aria-controls="collapse3">
-                                        <i class="fa fa-question-circle text-primary mr-2"></i> Why do some 1080p and 4K videos say "Merged Video + Audio"?
-                                    </button>
-                                </h5>
-                            </div>
-                            <div id="collapse3" class="collapse" aria-labelledby="faq3" data-parent="#faqAccordion">
-                                <div class="card-body text-secondary small">
-                                    YouTube stores high-definition video (1080p, 1440p, 4K) as separate video and audio streams. Our high-speed engine automatically downloads both parallel tracks and merges them using FFmpeg into a single complete MP4 with full sound.
-                                </div>
-                            </div>
+                <div class="card border rounded mb-2">
+                    <div class="card-header bg-white py-2 px-3" id="faq3">
+                        <button class="btn btn-link text-dark fw-medium text-left d-block w-100 p-0 text-decoration-none small collapsed" type="button" data-toggle="collapse" data-target="#collapse3" aria-expanded="false">
+                            Why are 1080p and 4K streams tagged as "Merged"?
+                        </button>
+                    </div>
+                    <div id="collapse3" class="collapse" data-parent="#faqAccordion">
+                        <div class="card-body text-secondary small py-2 px-3 border-top bg-light">
+                            YouTube stores 1080p+ video and high-quality audio as separate adaptive streams. Our background engine automatically merges the parallel streams into a single synchronized MP4 container.
                         </div>
+                    </div>
+                </div>
 
-                        <div class="card border mb-2 shadow-sm">
-                            <div class="card-header bg-white py-3" id="faq4">
-                                <h5 class="mb-0">
-                                    <button class="btn btn-link text-dark font-weight-bold text-left d-block w-100 p-0 text-decoration-none collapsed" type="button" data-toggle="collapse" data-target="#collapse4" aria-expanded="false" aria-controls="collapse4">
-                                        <i class="fa fa-question-circle text-primary mr-2"></i> Is it legal to download videos?
-                                    </button>
-                                </h5>
-                            </div>
-                            <div id="collapse4" class="collapse" aria-labelledby="faq4" data-parent="#faqAccordion">
-                                <div class="card-body text-secondary small">
-                                    Downloading videos for personal fair-use archive and offline educational viewing is standard practice. Please review our <a href="{{ url('terms-of-service') }}">Terms of Service</a> and ensure you respect the intellectual property rights of content creators.
-                                </div>
-                            </div>
+                <div class="card border rounded">
+                    <div class="card-header bg-white py-2 px-3" id="faq4">
+                        <button class="btn btn-link text-dark fw-medium text-left d-block w-100 p-0 text-decoration-none small collapsed" type="button" data-toggle="collapse" data-target="#collapse4" aria-expanded="false">
+                            What is the retention window for processed files?
+                        </button>
+                    </div>
+                    <div id="collapse4" class="collapse" data-parent="#faqAccordion">
+                        <div class="card-body text-secondary small py-2 px-3 border-top bg-light">
+                            All merged files are stored ephemerally and automatically purged after 15 minutes by scheduled cleanup tasks.
                         </div>
                     </div>
                 </div>
@@ -280,9 +243,19 @@
 function handleSearchSubmit(form) {
     const btn = document.getElementById('homeSubmitBtn');
     if (btn) {
-        btn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Fetching Video...';
+        btn.innerHTML = '<i class="fa fa-circle-o-notch fa-spin mr-1"></i> Extracting stream...';
         btn.classList.add('disabled');
     }
 }
+
+// Reset button state if navigated back via browser history (bfcache)
+window.addEventListener('pageshow', function() {
+    const btn = document.getElementById('homeSubmitBtn');
+    if (btn) {
+        btn.innerHTML = '<span>Fetch Video</span> <i class="fa fa-arrow-right" style="font-size: 0.76rem;"></i>';
+        btn.classList.remove('disabled');
+        btn.removeAttribute('disabled');
+    }
+});
 </script>
 @endsection

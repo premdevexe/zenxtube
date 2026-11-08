@@ -251,9 +251,20 @@ let currentAbortCtrl = null;
 
 function handleSearchSubmit(form) {
     const btn = document.getElementById('searchSubmitBtn');
-    btn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Analyzing Video...';
-    btn.classList.add('disabled');
+    if (btn) {
+        btn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Analyzing Video...';
+        btn.classList.add('disabled');
+    }
 }
+
+window.addEventListener('pageshow', function() {
+    const btn = document.getElementById('searchSubmitBtn');
+    if (btn) {
+        btn.innerHTML = '<i class="fa fa-cloud-download mr-1" aria-hidden="true"></i> Download';
+        btn.classList.remove('disabled');
+        btn.removeAttribute('disabled');
+    }
+});
 
 // Delegated handler for merge download buttons
 $(document).on('click', '.merge-download-btn', function () {

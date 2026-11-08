@@ -114,7 +114,7 @@ class AdminController extends Controller
         $ytdlpVersion = 'Unknown';
         if ($ytdlpPath && file_exists($ytdlpPath) && function_exists('shell_exec')) {
             try {
-                $vOutput = @shell_exec('"' . $ytdlpPath . '" --version 2>&1');
+                $vOutput = @shell_exec(escapeshellarg($ytdlpPath) . ' --version 2>&1');
                 if ($vOutput) {
                     $ytdlpVersion = trim($vOutput);
                 }
@@ -181,6 +181,20 @@ class AdminController extends Controller
             return redirect()->route('admin.downloads')->with('success', 'Download logs history has been cleared successfully.');
         } catch (\Throwable $e) {
             return redirect()->route('admin.downloads')->withErrors(['Failed to clear download logs: ' . $e->getMessage()]);
+        }
+    }
+
+    /**
+     * Delete a Single Download Log Row
+     */
+    public function deleteDownload($id)
+    {
+        try {
+            $log = DownloadLog::findOrFail($id);
+            $log->delete();
+            return redirect()->back()->with('success', 'Download log entry deleted successfully.');
+        } catch (\Throwable $e) {
+            return redirect()->back()->withErrors(['Failed to delete download log: ' . $e->getMessage()]);
         }
     }
 
@@ -275,7 +289,68 @@ class AdminController extends Controller
             'ffmpeg_path' => $this->resolveBinary('ffmpeg') ?: base_path('ffmpeg.exe'),
         ];
 
-        return view('admin.system', compact('files', 'totalStorageMB', 'systemInfo'));
+        // Installer Core Telemetry
+        $stateManager = new \App\Services\Installer\InstallationStateManager();
+        $isInstalled = $stateManager->isInstalled();
+        $lockFile = $stateManager->getLockFile();
+        $installerStatus = [
+            'is_installed' => $isInstalled,
+            'lock_file' => $lockFile,
+            'installed_at' => null,
+            'app_version' => '2.5.0',
+            'server_signature' => php_uname('s') . ' ' . php_uname('r'),
+        ];
+
+        if ($isInstalled && file_exists($lockFile)) {
+            $lockData = json_decode(@file_get_contents($lockFile), true) ?: [];
+            $installerStatus['installed_at'] = $lockData['installed_at'] ?? 'Recorded';
+            $installerStatus['app_version'] = $lockData['app_version'] ?? '2.5.0';
+        }
+
+        return view('admin.system', compact('files', 'totalStorageMB', 'systemInfo', 'installerStatus'));
+    }
+
+    /**
+     * Reset and Unlock Installation Wizard from Admin Panel
+     */
+    public function resetInstaller(Request $request)
+    {
+        $stateManager = new \App\Services\Installer\InstallationStateManager();
+        $stateManager->clearAllConfiguration();
+
+        if ($request->has('clear_env') || $request->has('remove_config')) {
+            try {
+                $envManager = new \App\Services\Installer\EnvironmentManager();
+                $envManager->resetConfiguration();
+            } catch (\Throwable $e) {}
+        }
+
+        try {
+            Cache::flush();
+            \Illuminate\Support\Facades\Artisan::call('view:clear');
+            \Illuminate\Support\Facades\Artisan::call('config:clear');
+        } catch (\Throwable $e) {}
+
+        return redirect()->back()->with('success', 'Installation wizard has been unlocked and reset. Endpoints at /installer are now accessible.');
+    }
+
+    /**
+     * Lock Installation Wizard from Admin Panel
+     */
+    public function lockInstaller(Request $request)
+    {
+        $stateManager = new \App\Services\Installer\InstallationStateManager();
+
+        try {
+            $stateManager->createLock([
+                'locked_via' => 'admin_portal',
+                'admin_email' => auth()->check() ? auth()->user()->email : 'system_admin',
+            ]);
+
+            return redirect()->back()->with('success', 'Installation wizard has been locked successfully. /installer is secured.');
+        } catch (\Throwable $e) {
+            return redirect()->back()->withErrors(['Failed to lock installation: ' . $e->getMessage()]);
+        }
     }
 
     /**
@@ -828,15 +903,34 @@ class AdminController extends Controller
      */
     protected function resolveBinary($binary)
     {
-        $candidates = [
-            base_path($binary . '.exe'),
-            base_path('bin/' . $binary . '.exe'),
-            base_path($binary),
-            base_path('bin/' . $binary),
-        ];
+        $isWindows = strtoupper(substr(PHP_OS, 0, 3)) === 'WIN';
+
+        if ($isWindows) {
+            $candidates = [
+                base_path('bin/' . $binary . '.exe'),
+                base_path($binary . '.exe'),
+                base_path('bin/' . $binary),
+                base_path($binary),
+            ];
+        } else {
+            $candidates = [
+                base_path('bin/' . $binary),
+                base_path($binary),
+                '/usr/local/bin/' . $binary,
+                '/usr/bin/' . $binary,
+                '/bin/' . $binary,
+            ];
+            $which = trim((string)@shell_exec('which ' . escapeshellarg($binary) . ' 2>/dev/null'));
+            if (!empty($which)) {
+                $candidates[] = $which;
+            }
+        }
 
         foreach ($candidates as $candidate) {
             if (file_exists($candidate)) {
+                if (!$isWindows) {
+                    @chmod($candidate, 0755);
+                }
                 return $candidate;
             }
         }

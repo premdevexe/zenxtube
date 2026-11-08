@@ -16,5 +16,10 @@ yarn-error.log
 /ffmpeg.exe
 /bin/
 
+# Archives & lock state
+*.zip
+install.lock
+installed.lock
+
 # Local dev tool state
 .openpost/

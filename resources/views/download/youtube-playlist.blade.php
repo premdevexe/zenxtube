@@ -1,6 +1,6 @@
 @extends('app')
 
-@section('title', ($playlist['title'] ?? 'Playlist') . ' - Zen X Download')
+@section('title', ($playlist['title'] ?? 'Playlist') . ' - ' . \App\SiteSetting::get('site_name', 'Zen X Download'))
 
 @section('content')
 

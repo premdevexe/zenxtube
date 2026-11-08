@@ -56,7 +56,7 @@ class ApiEcosystemSeeder extends Seeder
         $settings = [
             ['key' => 'api_maintenance_mode', 'value' => '0', 'type' => 'boolean', 'is_public' => true, 'group' => 'general', 'description' => 'Toggle API maintenance mode'],
             ['key' => 'api_maintenance_message', 'value' => 'Zen X API platform is currently undergoing scheduled maintenance. Please check back shortly.', 'type' => 'string', 'is_public' => true, 'group' => 'general', 'description' => 'Public maintenance message'],
-            ['key' => 'api_base_url', 'value' => 'http://127.0.0.1:8000/api/v1', 'type' => 'string', 'is_public' => true, 'group' => 'general', 'description' => 'Primary API gateway base URL'],
+            ['key' => 'api_base_url', 'value' => url('/api/v1'), 'type' => 'string', 'is_public' => true, 'group' => 'general', 'description' => 'Primary API gateway base URL'],
             ['key' => 'android_min_version', 'value' => '1.0.0', 'type' => 'string', 'is_public' => true, 'group' => 'app_version', 'description' => 'Minimum supported Android app version'],
             ['key' => 'android_latest_version', 'value' => '1.0.0', 'type' => 'string', 'is_public' => true, 'group' => 'app_version', 'description' => 'Latest available Android app version'],
             ['key' => 'android_update_url', 'value' => 'https://zenxdownload.com/download/zenx-android.apk', 'type' => 'string', 'is_public' => true, 'group' => 'app_version', 'description' => 'Direct APK download URL'],

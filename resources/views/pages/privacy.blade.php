@@ -1,6 +1,10 @@
 @extends('app')
 
-@section('title', 'Privacy Policy - Zen X Download')
+@php
+    $siteName = \App\SiteSetting::get('site_name', config('app.name', 'Zen X Download'));
+@endphp
+
+@section('title', 'Privacy Policy - ' . $siteName)
 
 @section('content')
 <div class="bg-light py-4 py-md-5 border-bottom">
@@ -17,7 +21,7 @@
                 <section class="mb-4">
                     <h4 class="font-weight-bold text-dark border-bottom pb-2">1. Overview & Commitment</h4>
                     <p class="text-secondary">
-                        Welcome to <strong>Zen X Download</strong> ("we", "our", or "us"). We respect your privacy and are committed to protecting any information that may be gathered while using our website and services. This Privacy Policy explains our practices regarding data collection, usage, and disclosure when you interact with our online media downloader.
+                        Welcome to <strong>{{ $siteName }}</strong> ("we", "our", or "us"). We respect your privacy and are committed to protecting any information that may be gathered while using our website and services. This Privacy Policy explains our practices regarding data collection, usage, and disclosure when you interact with our online media downloader.
                     </p>
                 </section>
 
@@ -27,7 +31,7 @@
                         We firmly believe in privacy-by-design for media conversion utilities:
                     </p>
                     <ul class="text-secondary">
-                        <li><strong>No Account Required:</strong> You do not need to register, log in, or provide personal identifiable information (name, address, telephone number, payment details) to use Zen X Download.</li>
+                        <li><strong>No Account Required:</strong> You do not need to register, log in, or provide personal identifiable information (name, address, telephone number, payment details) to use {{ $siteName }}.</li>
                         <li><strong>No Media Archiving:</strong> We do not log, retain, or store personal files or converted videos on persistent storage beyond the temporary streaming cache necessary to deliver the file to your device.</li>
                         <li><strong>No Tracking of Video Content:</strong> We do not build profiles based on the URLs or videos you download.</li>
                     </ul>
@@ -36,7 +40,7 @@
                 <section class="mb-4">
                     <h4 class="font-weight-bold text-dark border-bottom pb-2">3. Automatically Collected Information</h4>
                     <p class="text-secondary">
-                        When you access Zen X Download, standard web server logs may temporarily record general non-identifying technical information, including:
+                        When you access {{ $siteName }}, standard web server logs may temporarily record general non-identifying technical information, including:
                     </p>
                     <ul class="text-secondary">
                         <li>Browser type and version</li>
@@ -50,7 +54,7 @@
                 <section class="mb-4" id="cookies">
                     <h4 class="font-weight-bold text-dark border-bottom pb-2">4. Cookies and Local Storage</h4>
                     <p class="text-secondary">
-                        Zen X Download uses minimal cookies and browser local storage strictly necessary to:
+                        {{ $siteName }} uses minimal cookies and browser local storage strictly necessary to:
                     </p>
                     <ul class="text-secondary">
                         <li>Remember session state and security tokens (CSRF protection)</li>
@@ -65,7 +69,7 @@
                 <section class="mb-4">
                     <h4 class="font-weight-bold text-dark border-bottom pb-2">5. Third-Party Links & Platforms</h4>
                     <p class="text-secondary">
-                        Zen X Download processes publicly available links from third-party hosting platforms (e.g., YouTube, Facebook, Twitter/X, Vimeo, Instagram). We do not control and are not responsible for the privacy practices, content, or terms of third-party platforms. We encourage users to review the privacy policies of the respective platforms they access.
+                        {{ $siteName }} processes publicly available links from third-party hosting platforms (e.g., YouTube, Facebook, Twitter/X, Vimeo, Instagram). We do not control and are not responsible for the privacy practices, content, or terms of third-party platforms. We encourage users to review the privacy policies of the respective platforms they access.
                     </p>
                 </section>
 

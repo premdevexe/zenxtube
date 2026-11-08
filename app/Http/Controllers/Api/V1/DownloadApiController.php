@@ -117,13 +117,13 @@ class DownloadApiController extends BaseApiController
         // Record global DownloadLog for admin analytics
         try {
             DownloadLog::create([
-                'url' => $url,
-                'title' => $title,
-                'format' => ($type === 'audio') ? 'MP3' : ($height . 'p MP4'),
-                'file_size' => round($fileSize / (1024 * 1024), 2) . ' MB',
+                'video_url' => $url,
+                'video_title' => $title,
+                'format_label' => ($type === 'audio') ? 'MP3 Audio' : ($height . 'p MP4'),
+                'type' => $type,
+                'height' => ($type === 'audio') ? 0 : $height,
                 'ip_address' => $request->ip() ?: '127.0.0.1',
-                'user_agent' => $request->userAgent() ?: 'Zen X API Client',
-                'status' => 'success',
+                'user_agent' => substr($request->userAgent() ?: 'Zen X API Client', 0, 500),
             ]);
         } catch (\Exception $e) {
             // Non-critical

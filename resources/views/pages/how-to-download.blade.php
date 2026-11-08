@@ -1,6 +1,10 @@
 @extends('app')
 
-@section('title', 'How to Download Videos & Audio - Step by Step Tutorial - Zen X Download')
+@php
+    $siteName = \App\SiteSetting::get('site_name', config('app.name', 'Zen X Download'));
+@endphp
+
+@section('title', 'How to Download Videos & Audio - Step by Step Tutorial - ' . $siteName)
 
 @section('content')
 <div class="bg-light py-4 py-md-5 border-bottom">
@@ -38,7 +42,7 @@
                         </div>
                         <h5 class="font-weight-bold text-dark mb-2">Paste &amp; Fetch</h5>
                         <p class="text-muted small mb-0">
-                            Return to <a href="{{ url('/') }}">Zen X Download</a>, paste the link into the search box, and click the blue <strong>"Fetch Video"</strong> button.
+                            Return to <a href="{{ url('/') }}">{{ $siteName }}</a>, paste the link into the search box, and click the blue <strong>"Fetch Video"</strong> button.
                         </p>
                     </div>
                 </div>
@@ -70,7 +74,7 @@
                     <ol class="text-secondary small" style="line-height: 1.8;">
                         <li>Open your browser (Chrome, Edge, Firefox, or Safari).</li>
                         <li>Open the YouTube video you want to save. Highlight the full URL in the browser top address bar (e.g. <code>https://www.youtube.com/watch?v=...</code>) and press <code>Ctrl + C</code> (or <code>Cmd + C</code> on Mac).</li>
-                        <li>Open <a href="{{ url('/') }}">zenxdownload.com</a>, press <code>Ctrl + V</code> in the input box, and click <strong>Fetch Video</strong>.</li>
+                        <li>Open <a href="{{ url('/') }}">{{ $siteName }}</a>, press <code>Ctrl + V</code> in the input box, and click <strong>Fetch Video</strong>.</li>
                         <li>Click <strong>Download</strong> next to your preferred resolution. The file will stream straight into your computer's <em>Downloads</em> folder.</li>
                     </ol>
                 </div>
@@ -85,7 +89,7 @@
                     <ol class="text-secondary small" style="line-height: 1.8;">
                         <li>Open the YouTube app or Facebook app on your phone.</li>
                         <li>Under the video player, tap the <strong>Share</strong> button, then select <strong>Copy link</strong>.</li>
-                        <li>Open Google Chrome or Samsung Internet, go to <a href="{{ url('/') }}">zenxdownload.com</a>, and tap and hold the input box to <strong>Paste</strong>.</li>
+                        <li>Open Google Chrome or Samsung Internet, go to <a href="{{ url('/') }}">{{ $siteName }}</a>, and tap and hold the input box to <strong>Paste</strong>.</li>
                         <li>Tap <strong>Fetch Video</strong>, select 1080p, 720p, or MP3, and tap <strong>Download</strong>. Your Android notification bar will show instant download progress.</li>
                     </ol>
                 </div>
@@ -99,7 +103,7 @@
                     </h5>
                     <ol class="text-secondary small" style="line-height: 1.8;">
                         <li>Open the YouTube app on your iPhone and tap <strong>Share &rarr; Copy link</strong>.</li>
-                        <li>Open the built-in <strong>Safari</strong> browser and visit <a href="{{ url('/') }}">zenxdownload.com</a>.</li>
+                        <li>Open the built-in <strong>Safari</strong> browser and visit <a href="{{ url('/') }}">{{ $siteName }}</a>.</li>
                         <li>Paste your link and tap <strong>Fetch Video</strong>.</li>
                         <li>Tap <strong>Download</strong>. Safari will display a pop-up: <em>"Do you want to download this file?"</em> Tap <strong>Download</strong>.</li>
                         <li>You can view and play your downloaded video in the <strong>Files &rarr; Downloads</strong> folder or save it to your Photos Camera Roll.</li>
@@ -114,11 +118,11 @@
                         <i class="fa fa-list-ul text-warning mr-1"></i> Downloading YouTube Playlists
                     </h5>
                     <p class="text-secondary small mb-2">
-                        Zen X Download natively supports playlist extraction. To download tracks from a playlist:
+                        {{ $siteName }} natively supports playlist extraction. To download tracks from a playlist:
                     </p>
                     <ol class="text-secondary small" style="line-height: 1.8;">
                         <li>Copy the playlist URL (the URL must contain <code>list=PL...</code>).</li>
-                        <li>Paste it into our search bar. Zen X Download will load the entire playlist catalog with video thumbnails, titles, and individual download buttons.</li>
+                        <li>Paste it into our search bar. {{ $siteName }} will load the entire playlist catalog with video thumbnails, titles, and individual download buttons.</li>
                         <li>Click download on each track you want to keep.</li>
                     </ol>
                 </div>

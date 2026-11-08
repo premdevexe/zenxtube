@@ -39,9 +39,22 @@
         <div class="card-body">
             <div class="form-row">
                 <div class="form-group col-md-8">
-                    <label class="font-weight-bold">Primary API Gateway Base URL</label>
-                    <input type="text" name="api_base_url" class="form-control" value="{{ $settings['api_base_url']->value ?? url('/api/v1') }}" required>
-                    <small class="form-text text-muted">The public HTTPS gateway address distributed to mobile applications.</small>
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <label class="font-weight-bold mb-0">Primary API Gateway Base URL</label>
+                        <button type="button" class="btn btn-outline-primary btn-sm py-0 px-2 font-weight-bold" onclick="autoDetectApiBaseUrl()" title="Auto-detect current domain & protocol and populate input">
+                            <i class="fa fa-magic mr-1"></i> Auto Fetch Live Domain
+                        </button>
+                    </div>
+                    <div class="input-group">
+                        <input type="text" id="api_base_url_input" name="api_base_url" class="form-control font-mono" value="{{ $baseUrl ?? ($settings['api_base_url']->value ?? url('/api/v1')) }}" required>
+                        <div class="input-group-append">
+                            <button type="button" class="btn btn-outline-secondary" onclick="syncWithLiveServer(this)" title="Instantly sync & save with current host domain">
+                                <i class="fa fa-refresh mr-1"></i> Sync &amp; Save
+                            </button>
+                        </div>
+                    </div>
+                    <small class="form-text text-muted">The public HTTPS gateway address distributed to mobile apps &amp; SDKs. Click <strong>Auto Fetch Live Domain</strong> to adapt to your active domain or host.</small>
+                    <div id="sync_feedback" class="small mt-1" style="display:none;"></div>
                 </div>
                 <div class="form-group col-md-4">
                     <label class="font-weight-bold">Gateway Maintenance Mode</label>
@@ -85,7 +98,7 @@
 
                     <div class="form-group">
                         <label class="font-weight-bold small">APK Download / Update URL</label>
-                        <input type="text" name="android_update_url" class="form-control form-control-sm" value="{{ $settings['android_update_url']->value ?? 'https://zenxdownload.com/download/zenx-android.apk' }}" required>
+                        <input type="text" name="android_update_url" class="form-control form-control-sm" value="{{ $settings['android_update_url']->value ?? url('/download/app.apk') }}" required>
                     </div>
 
                     <div class="custom-control custom-checkbox mt-3">
@@ -180,4 +193,55 @@
         </button>
     </div>
 </form>
+
+<script>
+function autoDetectApiBaseUrl() {
+    var liveOrigin = window.location.origin;
+    var detectedUrl = liveOrigin.replace(/\/+$/, '') + '/api/v1';
+    var input = document.getElementById('api_base_url_input');
+    input.value = detectedUrl;
+    
+    var feedback = document.getElementById('sync_feedback');
+    feedback.style.display = 'block';
+    feedback.className = 'small mt-1 text-success font-weight-bold';
+    feedback.innerHTML = '<i class="fa fa-check-circle mr-1"></i> Detected current domain: ' + detectedUrl + ' (Click "Save Platform Settings" to persist)';
+    
+    input.style.backgroundColor = '#e8f5e9';
+    setTimeout(function() {
+        input.style.backgroundColor = '';
+    }, 1200);
+}
+
+function syncWithLiveServer(btn) {
+    var originalHtml = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fa fa-spinner fa-spin mr-1"></i> Syncing...';
+
+    fetch('{{ route("admin.api.settings.auto_sync") }}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': '{{ csrf_token() }}',
+            'Accept': 'application/json'
+        }
+    })
+    .then(function(res) { return res.json(); })
+    .then(function(data) {
+        btn.disabled = false;
+        btn.innerHTML = originalHtml;
+        if (data.success && data.base_url) {
+            document.getElementById('api_base_url_input').value = data.base_url;
+            var feedback = document.getElementById('sync_feedback');
+            feedback.style.display = 'block';
+            feedback.className = 'small mt-1 text-success font-weight-bold';
+            feedback.innerHTML = '<i class="fa fa-check-circle mr-1"></i> ' + data.message;
+        }
+    })
+    .catch(function(err) {
+        btn.disabled = false;
+        btn.innerHTML = originalHtml;
+        autoDetectApiBaseUrl();
+    });
+}
+</script>
 @endsection

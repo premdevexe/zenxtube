@@ -12,8 +12,8 @@ class VideoDownloaderService
 
     public function __construct()
     {
-        $this->binaryPath = $this->resolveBinaryPath('yt-dlp', 'YTDLP_PATH');
-        $this->ffmpegPath = $this->resolveBinaryPath('ffmpeg', 'FFMPEG_PATH');
+        $this->binaryPath = str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $this->resolveBinaryPath('yt-dlp', 'YTDLP_PATH'));
+        $this->ffmpegPath = str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $this->resolveBinaryPath('ffmpeg', 'FFMPEG_PATH'));
     }
 
     /**
@@ -21,50 +21,153 @@ class VideoDownloaderService
      */
     protected function resolveBinaryPath($name, $envKey = null)
     {
+        $isWindows = strtoupper(substr(PHP_OS, 0, 3)) === 'WIN';
+
         // 1. Check explicit .env configuration
         if ($envKey && env($envKey)) {
             $customPath = env($envKey);
             if (file_exists($customPath)) {
+                if (!$isWindows) {
+                    @chmod($customPath, 0755);
+                }
                 return $customPath;
             }
         }
 
-        $isWindows = strtoupper(substr(PHP_OS, 0, 3)) === 'WIN';
-
-        // 2. Relative project paths
-        $candidates = $isWindows
-            ? ["yt-dlp.exe", "bin/yt-dlp.exe", "yt-dlp", "bin/yt-dlp"]
-            : ["bin/{$name}", "{$name}", "bin/{$name}.exe", "{$name}.exe"];
-
-        if ($name === 'ffmpeg') {
-            $candidates = $isWindows
-                ? ["ffmpeg.exe", "bin/ffmpeg.exe", "ffmpeg", "bin/ffmpeg"]
-                : ["bin/{$name}", "{$name}", "bin/{$name}.exe", "{$name}.exe"];
-        }
-
-        foreach ($candidates as $cand) {
-            $full = base_path($cand);
-            if (file_exists($full)) {
-                return $full;
-            }
-        }
-
-        // 3. Linux system standard PATH locations (/usr/local/bin, /usr/bin)
-        if (!$isWindows) {
-            $systemPaths = [
-                "/usr/local/bin/{$name}",
-                "/usr/bin/{$name}",
-                "/bin/{$name}"
+        if ($isWindows) {
+            // Windows candidate paths (.exe prioritized)
+            $candidates = [
+                base_path("bin/{$name}.exe"),
+                base_path("{$name}.exe"),
+                base_path("bin/{$name}"),
+                base_path($name),
             ];
-            foreach ($systemPaths as $sysPath) {
-                if (file_exists($sysPath)) {
-                    return $sysPath;
+
+            foreach ($candidates as $cand) {
+                if (file_exists($cand)) {
+                    return $cand;
                 }
             }
+
+            return base_path("{$name}.exe");
+        } else {
+            // Linux / Unix / Shared Hosting / VPS: NEVER use .exe binaries!
+            $candidates = [
+                base_path("bin/{$name}"),
+                base_path($name),
+                "/usr/local/bin/{$name}",
+                "/usr/bin/{$name}",
+                "/bin/{$name}",
+                "/opt/cpanel/ea-php82/root/usr/bin/{$name}",
+            ];
+
+            foreach ($candidates as $cand) {
+                if (file_exists($cand)) {
+                    @chmod($cand, 0755);
+                    return $cand;
+                }
+            }
+
+            // Check system PATH via 'which'
+            $whichOutput = trim((string)@shell_exec('which ' . escapeshellarg($name) . ' 2>/dev/null'));
+            if (!empty($whichOutput) && file_exists($whichOutput)) {
+                @chmod($whichOutput, 0755);
+                return $whichOutput;
+            }
+
+            // If yt-dlp is missing on Linux, auto-provision standalone binary if bin/ is writable
+            if ($name === 'yt-dlp') {
+                $target = base_path('bin/yt-dlp');
+                if ($this->autoDownloadLinuxYtDlp($target)) {
+                    return $target;
+                }
+            }
+
+            return base_path("bin/{$name}");
+        }
+    }
+
+    /**
+     * Automatically download official standalone Linux yt-dlp binary if missing.
+     */
+    public function autoDownloadLinuxYtDlp($targetPath)
+    {
+        $binDir = dirname($targetPath);
+        if (!file_exists($binDir)) {
+            @mkdir($binDir, 0755, true);
+        }
+        if (!is_writable($binDir) && file_exists($binDir)) {
+            return false;
         }
 
-        // 4. Fallback default
-        return $isWindows ? base_path("{$name}.exe") : base_path("bin/{$name}");
+        $url = 'https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp';
+        $ctx = stream_context_create([
+            'http' => [
+                'timeout' => 30,
+                'follow_location' => 1,
+                'user_agent' => 'Mozilla/5.0 (compatible; ZenXDownload/2.5)'
+            ]
+        ]);
+
+        $content = @file_get_contents($url, false, $ctx);
+        if ($content && strlen($content) > 1000000) {
+            @file_put_contents($targetPath, $content);
+            @chmod($targetPath, 0755);
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * Check if a CLI command or runtime is available on the host system.
+     */
+    public function hasCommand($cmd)
+    {
+        $isWindows = strtoupper(substr(PHP_OS, 0, 3)) === 'WIN';
+        $test = $isWindows ? "where " . escapeshellarg($cmd) : "which " . escapeshellarg($cmd);
+        $res = @shell_exec($test . " 2>&1");
+        return !empty($res) && stripos($res, 'not recognized') === false && stripos($res, 'no ' . $cmd) === false;
+    }
+
+    /**
+     * Construct safe, high-speed baseline yt-dlp flags.
+     */
+    protected function getBaseFlags($timeout = 15)
+    {
+        $flags = [
+            escapeshellarg($this->binaryPath),
+            '--no-warnings',
+            '--no-check-certificates',
+            '--prefer-free-formats',
+            '--socket-timeout ' . intval($timeout),
+        ];
+
+        // Only add --js-runtimes if a runtime actually exists on the host
+        if ($this->hasCommand('node')) {
+            $flags[] = '--js-runtimes node';
+        } elseif ($this->hasCommand('deno')) {
+            $flags[] = '--js-runtimes deno';
+        }
+
+        // Auto-detect cookies file in storage/app/cookies.txt or base_path('cookies.txt')
+        $cookieFile = null;
+        if (file_exists(storage_path('app/cookies.txt'))) {
+            $cookieFile = storage_path('app/cookies.txt');
+        } elseif (file_exists(base_path('cookies.txt'))) {
+            $cookieFile = base_path('cookies.txt');
+        }
+        if ($cookieFile) {
+            $flags[] = '--cookies ' . escapeshellarg($cookieFile);
+        }
+
+        // Auto-detect proxy
+        $proxy = env('YTDLP_PROXY') ?: env('HTTP_PROXY');
+        if ($proxy) {
+            $flags[] = '--proxy ' . escapeshellarg($proxy);
+        }
+
+        return $flags;
     }
 
     public function getBinaryPath()
@@ -104,22 +207,32 @@ class VideoDownloaderService
 
     protected function fetchPlaylistInfoDirect($url)
     {
-        $speedFlags = [
-            escapeshellarg($this->binaryPath),
-            '--flat-playlist',
-            '--dump-single-json',
-            '--no-warnings',
-            '--no-check-certificates',
-            '--prefer-free-formats',
-            '--socket-timeout 10',
-            '--extractor-args', escapeshellarg('youtube:skip=translated_subs,comments'),
-            '--js-runtimes node',
-            escapeshellarg($url)
-        ];
+        $url = trim($url);
+        $isYouTube = (stripos($url, 'youtube.com') !== false || stripos($url, 'youtu.be') !== false);
 
-        $cmd = implode(' ', $speedFlags);
+        $flags = $this->getBaseFlags(20);
+        $flags[] = '--flat-playlist';
+        $flags[] = '--dump-single-json';
+        if ($isYouTube) {
+            $flags[] = '--extractor-args';
+            $flags[] = escapeshellarg('youtube:player_client=android,web;skip=translated_subs,comments');
+        }
+        $flags[] = escapeshellarg($url);
+
+        $cmd = implode(' ', $flags);
         $output = $this->runCommand($cmd);
         $data = json_decode($output, true);
+
+        if (!$data || empty($data['entries'])) {
+            // Fallback retry without player_client
+            $flags = $this->getBaseFlags(20);
+            $flags[] = '--flat-playlist';
+            $flags[] = '--dump-single-json';
+            $flags[] = escapeshellarg($url);
+            $cmd = implode(' ', $flags);
+            $output = $this->runCommand($cmd);
+            $data = json_decode($output, true);
+        }
 
         if (!$data || empty($data['entries'])) {
             return null;
@@ -137,10 +250,15 @@ class VideoDownloaderService
                 $thumbnail = end($entry['thumbnails'])['url'] ?? $thumbnail;
             }
 
+            $videoUrl = !empty($entry['url']) ? $entry['url'] : ($id ? "https://www.youtube.com/watch?v={$id}" : '');
             $videos[] = [
+                'id' => $id,
                 'encrypted_id' => $id,
                 'title' => $title,
-                'thumbnail' => $thumbnail
+                'thumbnail' => $thumbnail,
+                'url' => $videoUrl,
+                'duration' => $entry['duration'] ?? '',
+                'uploader' => $entry['uploader'] ?? ($entry['channel'] ?? ''),
             ];
         }
 
@@ -167,22 +285,44 @@ class VideoDownloaderService
 
     protected function fetchVideoInfoDirect($url)
     {
-        $speedFlags = [
-            escapeshellarg($this->binaryPath),
-            '--dump-single-json',
-            '--no-playlist',
-            '--no-warnings',
-            '--no-check-certificates',
-            '--prefer-free-formats',
-            '--socket-timeout 10',
-            '--extractor-args', escapeshellarg('youtube:skip=translated_subs,comments'),
-            '--js-runtimes node',
-            escapeshellarg($url)
-        ];
+        $url = trim($url);
+        $isYouTube = (stripos($url, 'youtube.com') !== false || stripos($url, 'youtu.be') !== false);
 
-        $cmd = implode(' ', $speedFlags);
-        $output = $this->runCommand($cmd);
-        $data = json_decode($output, true);
+        // Multi-tier extraction strategy:
+        // Tier 1: Android client (avoids YouTube web bot-detection and PO-token challenges on server IPs)
+        // Tier 2: iOS client fallback
+        // Tier 3: Default web client
+        $attempts = [];
+        if ($isYouTube) {
+            $attempts[] = 'youtube:player_client=android,web;skip=translated_subs,comments';
+            $attempts[] = 'youtube:player_client=ios,web;skip=translated_subs,comments';
+            $attempts[] = 'youtube:skip=translated_subs,comments';
+        } else {
+            $attempts[] = null;
+        }
+
+        $data = null;
+        foreach ($attempts as $extractorArgs) {
+            $flags = $this->getBaseFlags(20);
+            $flags[] = '--dump-single-json';
+            $flags[] = '--no-playlist';
+
+            if ($extractorArgs) {
+                $flags[] = '--extractor-args';
+                $flags[] = escapeshellarg($extractorArgs);
+            }
+
+            $flags[] = escapeshellarg($url);
+            $cmd = implode(' ', $flags);
+
+            $output = $this->runCommand($cmd);
+            $parsed = json_decode($output, true);
+
+            if ($parsed && !empty($parsed['title'])) {
+                $data = $parsed;
+                break;
+            }
+        }
 
         if (!$data || empty($data['title'])) {
             return null;
@@ -327,21 +467,21 @@ class VideoDownloaderService
         // --no-check-certificates: skip redundant SSL cert validation
         // --no-warnings: silent execution
         // --postprocessor-args "ffmpeg:-threads 4": multi-threaded FFmpeg encoding/muxing
-        $commonFlags = [
-            escapeshellarg($this->binaryPath),
+        $commonFlags = array_merge($this->getBaseFlags(25), [
             '-N 8',
             '--http-chunk-size 10M',
             '--buffer-size 1024K',
             '--ffmpeg-location', escapeshellarg($this->ffmpegPath),
-            '--socket-timeout 15',
             '--retries 3',
             '--fragment-retries 3',
             '--no-playlist',
-            '--no-check-certificates',
-            '--no-warnings',
-            '--js-runtimes node',
             '--postprocessor-args', escapeshellarg('ffmpeg:-threads 4'),
-        ];
+        ]);
+
+        if (stripos($url, 'youtube.com') !== false || stripos($url, 'youtu.be') !== false) {
+            $commonFlags[] = '--extractor-args';
+            $commonFlags[] = escapeshellarg('youtube:player_client=android,web;skip=translated_subs,comments');
+        }
 
         if ($type === 'audio') {
             $targetFile = $outputDir . DIRECTORY_SEPARATOR . $hash . '.mp3';
@@ -418,14 +558,24 @@ class VideoDownloaderService
     protected function runCommand($cmd)
     {
         $errLog = storage_path('logs/ytdlp_stderr.log');
+        $logDir = dirname($errLog);
+        if (!file_exists($logDir)) {
+            @mkdir($logDir, 0775, true);
+        }
+
         $descriptorspec = [
             1 => ['pipe', 'w'],
             2 => ['file', $errLog, 'w'] // Capture stderr to disk without pipe buffer deadlocks on Windows
         ];
 
+        $isWindows = strtoupper(substr(PHP_OS, 0, 3)) === 'WIN';
+        if (!$isWindows && file_exists($this->binaryPath)) {
+            @chmod($this->binaryPath, 0755);
+        }
+
         $process = proc_open($cmd, $descriptorspec, $pipes, base_path());
         if (!is_resource($process)) {
-            $this->lastError = 'Downloader process failed to start.';
+            $this->lastError = 'Downloader process failed to start. Please check server PHP proc_open permissions.';
             return '';
         }
 
@@ -433,13 +583,13 @@ class VideoDownloaderService
         fclose($pipes[1]);
         $exitCode = proc_close($process);
 
-        if (file_exists($errLog)) {
+        if ($exitCode === 0) {
+            $this->lastError = null;
+        } elseif (file_exists($errLog)) {
             $errContent = trim(file_get_contents($errLog));
             if (!empty($errContent)) {
                 $this->lastError = $errContent;
-                if ($exitCode !== 0) {
-                    \Log::info("Downloader process note (exit code {$exitCode}): " . substr($errContent, 0, 300));
-                }
+                \Log::warning("Downloader process note (exit code {$exitCode}): " . substr($errContent, 0, 300));
             }
         }
 
