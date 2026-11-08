@@ -12,23 +12,59 @@ class VideoDownloaderService
 
     public function __construct()
     {
-        $this->binaryPath = base_path('yt-dlp.exe');
-        if (!file_exists($this->binaryPath)) {
-            $backup = base_path('bin/yt-dlp.exe');
-            if (file_exists($backup)) {
-                $this->binaryPath = $backup;
-                @copy($backup, base_path('yt-dlp.exe'));
+        $this->binaryPath = $this->resolveBinaryPath('yt-dlp', 'YTDLP_PATH');
+        $this->ffmpegPath = $this->resolveBinaryPath('ffmpeg', 'FFMPEG_PATH');
+    }
+
+    /**
+     * Dynamically resolve binary path across Windows and Linux (cPanel / VPS).
+     */
+    protected function resolveBinaryPath($name, $envKey = null)
+    {
+        // 1. Check explicit .env configuration
+        if ($envKey && env($envKey)) {
+            $customPath = env($envKey);
+            if (file_exists($customPath)) {
+                return $customPath;
             }
         }
 
-        $this->ffmpegPath = base_path('ffmpeg.exe');
-        if (!file_exists($this->ffmpegPath)) {
-            $backupFfmpeg = base_path('bin/ffmpeg.exe');
-            if (file_exists($backupFfmpeg)) {
-                $this->ffmpegPath = $backupFfmpeg;
-                @copy($backupFfmpeg, base_path('ffmpeg.exe'));
+        $isWindows = strtoupper(substr(PHP_OS, 0, 3)) === 'WIN';
+
+        // 2. Relative project paths
+        $candidates = $isWindows
+            ? ["yt-dlp.exe", "bin/yt-dlp.exe", "yt-dlp", "bin/yt-dlp"]
+            : ["bin/{$name}", "{$name}", "bin/{$name}.exe", "{$name}.exe"];
+
+        if ($name === 'ffmpeg') {
+            $candidates = $isWindows
+                ? ["ffmpeg.exe", "bin/ffmpeg.exe", "ffmpeg", "bin/ffmpeg"]
+                : ["bin/{$name}", "{$name}", "bin/{$name}.exe", "{$name}.exe"];
+        }
+
+        foreach ($candidates as $cand) {
+            $full = base_path($cand);
+            if (file_exists($full)) {
+                return $full;
             }
         }
+
+        // 3. Linux system standard PATH locations (/usr/local/bin, /usr/bin)
+        if (!$isWindows) {
+            $systemPaths = [
+                "/usr/local/bin/{$name}",
+                "/usr/bin/{$name}",
+                "/bin/{$name}"
+            ];
+            foreach ($systemPaths as $sysPath) {
+                if (file_exists($sysPath)) {
+                    return $sysPath;
+                }
+            }
+        }
+
+        // 4. Fallback default
+        return $isWindows ? base_path("{$name}.exe") : base_path("bin/{$name}");
     }
 
     public function getBinaryPath()
