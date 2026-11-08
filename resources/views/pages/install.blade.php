@@ -209,7 +209,12 @@
                     </li>
                     <li class="nav-item">
                         <a class="nav-link" id="tab-linux" data-toggle="tab" href="#os-linux" role="tab">
-                            <i class="fa fa-linux text-dark mr-1"></i> Linux (Ubuntu / Debian / Nginx)
+                            <i class="fa fa-linux text-dark mr-1"></i> Linux (Ubuntu / VPS)
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" id="tab-cpanel" data-toggle="tab" href="#os-cpanel" role="tab">
+                            <i class="fa fa-server text-danger mr-1"></i> cPanel (Shared Hosting)
                         </a>
                     </li>
                     <li class="nav-item">
@@ -346,9 +351,130 @@
                             <h5 class="font-weight-bold text-dark mb-3"><i class="fa fa-terminal text-primary mr-2"></i> Ubuntu / Debian One-Shot Setup</h5>
                             <div class="code-box">
                                 <button class="copy-btn" onclick="copySnippet(this)">Copy</button>
-                                <code># 1. System packages &amp; media binaries<br>sudo apt update &amp;&amp; sudo apt install -y php8.2-cli php8.2-mbstring php8.2-xml php8.2-curl php8.2-mysql php8.2-zip ffmpeg yt-dlp<br><br># 2. Clone repository<br>git clone https://github.com/ahmedhalima/all-video-downloader.git /var/www/zenx<br>cd /var/www/zenx<br><br># 3. Dependencies &amp; Env<br>composer install --no-dev --ignore-platform-reqs<br>cp .env.example .env &amp;&amp; php artisan key:generate<br><br># 4. Storage permissions<br>sudo chown -R www-data:www-data storage bootstrap/cache<br>sudo chmod -R 775 storage bootstrap/cache<br><br># 5. Database migrate &amp; seed<br>php artisan migrate --seed --force<br><br># 6. Run server or configure Nginx<br>php artisan serve --host=0.0.0.0 --port=8000</code>
+                                <code># 1. System packages &amp; media binaries<br>sudo apt update &amp;&amp; sudo apt install -y php8.2-cli php8.2-mbstring php8.2-xml php8.2-curl php8.2-mysql php8.2-zip ffmpeg yt-dlp<br><br># 2. Clone repository<br>git clone https://github.com/premdevexe/zenxtube.git /var/www/zenx<br>cd /var/www/zenx<br><br># 3. Dependencies &amp; Env<br>composer install --no-dev --ignore-platform-reqs<br>cp .env.example .env &amp;&amp; php artisan key:generate<br><br># 4. Storage permissions<br>sudo chown -R www-data:www-data storage bootstrap/cache<br>sudo chmod -R 775 storage bootstrap/cache<br><br># 5. Database migrate &amp; seed<br>php artisan migrate --seed --force<br><br># 6. Run server or configure Nginx<br>php artisan serve --host=0.0.0.0 --port=8000</code>
                             </div>
                         </div>
+                    </div>
+
+                    <!-- ========================================== -->
+                    <!-- 3. CPANEL TAB -->
+                    <!-- ========================================== -->
+                    <div class="tab-pane fade" id="os-cpanel" role="tabpanel">
+                        
+                        <!-- Step 1: Uploading Files -->
+                        <div class="minimal-card p-4 p-md-4 mb-4">
+                            <div class="d-flex align-items-center mb-3">
+                                <div class="step-badge mr-3">1</div>
+                                <div>
+                                    <h5 class="font-weight-bold text-dark mb-0">Upload Files &amp; Folder Structure</h5>
+                                    <small class="text-muted">Place project files securely above public_html to protect .env</small>
+                                </div>
+                            </div>
+                            <p class="small text-secondary mb-2">
+                                <strong>Option A (Recommended for Main Domain):</strong>
+                            </p>
+                            <ol class="small text-secondary mb-3">
+                                <li>In cPanel <strong>File Manager</strong>, create a new folder: <code>/home/username/zenxtube</code></li>
+                                <li>Upload your zip archive and extract all files inside <code>/home/username/zenxtube</code></li>
+                                <li>Move the entire contents of <code>/home/username/zenxtube/public/</code> into your web root <code>/home/username/public_html/</code></li>
+                                <li>Open <code>public_html/index.php</code> in cPanel File Manager and update paths to:</li>
+                            </ol>
+                            <div class="code-box">
+                                <button class="copy-btn" onclick="copySnippet(this)">Copy</button>
+                                <code>require __DIR__.'/../zenxtube/vendor/autoload.php';<br>$app = require_once __DIR__.'/../zenxtube/bootstrap/app.php';</code>
+                            </div>
+                            <p class="small text-muted mb-0">
+                                <i class="fa fa-info-circle text-info mr-1"></i> <strong>Option B (For Subdomain / Addon Domain):</strong> In cPanel <strong>Domains</strong>, simply set the Document Root directly to <code>/home/username/zenxtube/public</code>.
+                            </p>
+                        </div>
+
+                        <!-- Step 2: PHP Version & Extensions -->
+                        <div class="minimal-card p-4 p-md-4 mb-4">
+                            <div class="d-flex align-items-center mb-3">
+                                <div class="step-badge mr-3">2</div>
+                                <div>
+                                    <h5 class="font-weight-bold text-dark mb-0">Select PHP Version &amp; Enable Shell Functions</h5>
+                                    <small class="text-muted">cPanel MultiPHP Manager or Select PHP Version</small>
+                                </div>
+                            </div>
+                            <ul class="small text-secondary mb-2">
+                                <li>Select <strong>PHP 8.1</strong> or <strong>PHP 8.2</strong>.</li>
+                                <li>Ensure extensions are enabled: <code>pdo_mysql</code>, <code>curl</code>, <code>mbstring</code>, <code>fileinfo</code>, <code>openssl</code>, <code>zip</code>, <code>bcmath</code>.</li>
+                                <li><strong>Important for Downloaders:</strong> Under PHP Options/Settings, ensure <code>proc_open</code> and <code>shell_exec</code> are <strong>NOT</strong> disabled in <code>disable_functions</code>.</li>
+                            </ul>
+                        </div>
+
+                        <!-- Step 3: MySQL Database Setup -->
+                        <div class="minimal-card p-4 p-md-4 mb-4">
+                            <div class="d-flex align-items-center mb-3">
+                                <div class="step-badge mr-3">3</div>
+                                <div>
+                                    <h5 class="font-weight-bold text-dark mb-0">Create Database &amp; Configure .env</h5>
+                                    <small class="text-muted">MySQL Databases Wizard &amp; Credentials</small>
+                                </div>
+                            </div>
+                            <ol class="small text-secondary mb-3">
+                                <li>Go to cPanel &rarr; <strong>MySQL Databases</strong>.</li>
+                                <li>Create database (e.g. <code>cpaneluser_zenx</code>) and user (e.g. <code>cpaneluser_dbuser</code>).</li>
+                                <li>Assign the user to database with <strong>ALL PRIVILEGES</strong>.</li>
+                                <li>In File Manager, edit <code>/home/username/zenxtube/.env</code>:</li>
+                            </ol>
+                            <div class="code-box">
+                                <button class="copy-btn" onclick="copySnippet(this)">Copy</button>
+                                <code>DB_CONNECTION=mysql<br>DB_HOST=127.0.0.1<br>DB_PORT=3306<br>DB_DATABASE=cpaneluser_zenx<br>DB_USERNAME=cpaneluser_dbuser<br>DB_PASSWORD=YourStrongPassword<br>ADMIN_PASSWORD=MySecretAdmin123!</code>
+                            </div>
+                        </div>
+
+                        <!-- Step 4: Standalone Linux yt-dlp & FFmpeg -->
+                        <div class="minimal-card p-4 p-md-4 mb-4">
+                            <div class="d-flex align-items-center mb-3">
+                                <div class="step-badge mr-3">4</div>
+                                <div>
+                                    <h5 class="font-weight-bold text-dark mb-0">Download Standalone Linux Binaries</h5>
+                                    <small class="text-muted">Set up yt-dlp and FFmpeg via cPanel Terminal</small>
+                                </div>
+                            </div>
+                            <p class="small text-secondary mb-2">Open cPanel <strong>Terminal</strong> and run:</p>
+                            <div class="code-box">
+                                <button class="copy-btn" onclick="copySnippet(this)">Copy</button>
+                                <code>cd /home/username/zenxtube<br>mkdir -p bin<br># Download Linux yt-dlp standalone<br>curl -L https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -o bin/yt-dlp<br>chmod +x bin/yt-dlp<br><br># Check server FFmpeg (or install static build into bin/)<br>which ffmpeg || echo "Check hosting provider for ffmpeg path"</code>
+                            </div>
+                        </div>
+
+                        <!-- Step 5: Migrate & Seed -->
+                        <div class="minimal-card p-4 p-md-4 mb-4">
+                            <div class="d-flex align-items-center mb-3">
+                                <div class="step-badge mr-3">5</div>
+                                <div>
+                                    <h5 class="font-weight-bold text-dark mb-0">Migrate Database &amp; Link Storage</h5>
+                                    <small class="text-muted">Execute migrations and seed default administrative account</small>
+                                </div>
+                            </div>
+                            <div class="code-box">
+                                <button class="copy-btn" onclick="copySnippet(this)">Copy</button>
+                                <code>cd /home/username/zenxtube<br>chmod -R 775 storage bootstrap/cache<br>php artisan migrate --seed --force<br>php artisan storage:link</code>
+                            </div>
+                            <p class="small text-muted mb-0">
+                                Default Admin login: <strong>admin@zenxdownload.com</strong> (Password configured in <code>ADMIN_PASSWORD</code>).
+                            </p>
+                        </div>
+
+                        <!-- Step 6: Cron Job -->
+                        <div class="minimal-card p-4 p-md-4 mb-4">
+                            <div class="d-flex align-items-center mb-3">
+                                <div class="step-badge mr-3">6</div>
+                                <div>
+                                    <h5 class="font-weight-bold text-dark mb-0">Set Up cPanel Cron Job</h5>
+                                    <small class="text-muted">Automates pruning of temporary downloads older than 15 minutes</small>
+                                </div>
+                            </div>
+                            <p class="small text-secondary mb-2">In cPanel &rarr; <strong>Cron Jobs</strong>, select <em>Once Per Minute (* * * * *)</em> and enter:</p>
+                            <div class="code-box">
+                                <button class="copy-btn" onclick="copySnippet(this)">Copy</button>
+                                <code>cd /home/username/zenxtube &amp;&amp; php artisan schedule:run &gt;&gt; /dev/null 2&gt;&amp;1</code>
+                            </div>
+                        </div>
+
                     </div>
 
                     <!-- ========================================== -->
