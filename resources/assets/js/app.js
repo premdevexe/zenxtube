@@ -1,22 +1,18 @@
-
 /**
- * First we will load all of this project's JavaScript dependencies which
- * includes Vue and other libraries. It is a great starting point when
- * building robust, powerful web applications using Vue and Laravel.
+ * Zen X Tube - Core JavaScript Application
+ * Pure Vanilla JavaScript & HTML/CSS Architecture (Zero Vue Dependency)
  */
 
 require('./bootstrap');
 
-window.Vue = require('vue');
+import ExampleComponent from './components/ExampleComponent';
 
-/**
- * Next, we will create a fresh Vue application instance and attach it to
- * the page. Then, you may begin adding components to this application
- * or customize the JavaScript scaffolding to fit your unique needs.
- */
+document.addEventListener('DOMContentLoaded', () => {
+    // Mount vanilla components if mount element exists
+    const appElement = document.getElementById('app');
+    if (appElement && appElement.querySelector('[data-component="example"]')) {
+        new ExampleComponent(appElement.querySelector('[data-component="example"]'));
+    }
 
-Vue.component('example-component', require('./components/ExampleComponent.vue'));
-
-const app = new Vue({
-    el: '#app'
+    console.log('Zen X Tube frontend initialized with Vanilla JavaScript.');
 });
