@@ -1,0 +1,268 @@
+openapi: 3.0.3
+info:
+  title: Zen X Download API Platform
+  version: 1.0.0
+  description: Centralized Enterprise REST API backend for Zen X Download web frontend, Android mobile application, and future iOS application.
+servers:
+  - url: http://127.0.0.1:8000/api/v1
+    description: Local Development Gateway
+  - url: https://api.zenxdownload.com/api/v1
+    description: Production HTTPS Gateway
+
+paths:
+  /status:
+    get:
+      summary: System status and component diagnostics
+      tags: [System]
+      responses:
+        '200':
+          description: All systems operational
+        '503':
+          description: System or binary degraded
+
+  /config:
+    get:
+      summary: Public platform features, limits, and supported portals
+      tags: [Config]
+      responses:
+        '200':
+          description: Configuration retrieved
+
+  /app/version:
+    get:
+      summary: Mobile app version check & update enforcement
+      tags: [Config]
+      parameters:
+        - name: platform
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [android, ios]
+            default: android
+        - name: current_version
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Version metadata
+
+  /device/register:
+    post:
+      summary: Register mobile or web device and issue initial token pair
+      tags: [Authentication]
+      parameters:
+        - name: X-Client-ID
+          in: header
+          required: false
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [device_uuid]
+              properties:
+                device_uuid:
+                  type: string
+                platform:
+                  type: string
+                  enum: [android, ios, web]
+                device_model:
+                  type: string
+                os_version:
+                  type: string
+                app_version:
+                  type: string
+                fcm_token:
+                  type: string
+      responses:
+        '201':
+          description: Device registered and tokens issued
+        '403':
+          description: Device blocked
+
+  /auth/refresh:
+    post:
+      summary: Rotate refresh token and obtain new bearer token
+      tags: [Authentication]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [refresh_token]
+              properties:
+                refresh_token:
+                  type: string
+      responses:
+        '200':
+          description: Tokens rotated
+        '401':
+          description: Invalid or expired refresh token
+
+  /auth/me:
+    get:
+      summary: Get authenticated device profile
+      tags: [Authentication]
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Device profile
+        '401':
+          description: Unauthenticated
+
+  /auth/logout:
+    post:
+      summary: Revoke all active device tokens
+      tags: [Authentication]
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Logged out
+
+  /video/info:
+    post:
+      summary: Extract video format matrix and direct streams (SSRF Guarded)
+      tags: [Media]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [url]
+              properties:
+                url:
+                  type: string
+      responses:
+        '200':
+          description: Formats and metadata
+        '403':
+          description: SSRF or private subnet rejection
+        '422':
+          description: Extraction error
+
+  /playlist/info:
+    post:
+      summary: Extract playlist items and details
+      tags: [Media]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [url]
+              properties:
+                url:
+                  type: string
+      responses:
+        '200':
+          description: Playlist items
+
+  /download:
+    post:
+      summary: Request 8-stream parallel fragment download and merge
+      tags: [Media]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [url]
+              properties:
+                url:
+                  type: string
+                type:
+                  type: string
+                  enum: [video, audio]
+                  default: video
+                height:
+                  type: integer
+                  default: 720
+                title:
+                  type: string
+      responses:
+        '200':
+          description: Download job completed and signed URL issued
+        '422':
+          description: Extraction failure
+
+  /download/{id}/status:
+    get:
+      summary: Get download job status
+      tags: [Media]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Status
+
+  /download/{id}/formats:
+    get:
+      summary: Get formats for job target video
+      tags: [Media]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Formats
+
+  /download/{id}/file:
+    get:
+      summary: Stream or download binary file with byte-range resume support
+      tags: [Media]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: token
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Binary file stream
+        '206':
+          description: Partial content range stream
+        '403':
+          description: Invalid token
+        '410':
+          description: File expired under 15-minute retention policy
+
+  /download/history:
+    get:
+      summary: Get device download history
+      tags: [Media]
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Paginated download history
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: Bearer Token (SHA-256 Validated)

@@ -35,4 +35,9 @@ return [
         'secret' => env('STRIPE_SECRET'),
     ],
 
+    'pusher_beams' => [
+        'instance_id' => env('PUSHER_BEAMS_INSTANCE_ID', '9497a1ea-8ab7-45e1-9c1e-e5af01309442'),
+        'secret_key' => env('PUSHER_BEAMS_SECRET_KEY', null),
+    ],
+
 ];

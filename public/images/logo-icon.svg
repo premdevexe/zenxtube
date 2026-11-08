@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" fill="none">
+  <defs>
+    <!-- Background Gradient: Cobalt Blue to YouTube Crimson -->
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0052D4"/>
+      <stop offset="45%" stop-color="#4364F7"/>
+      <stop offset="100%" stop-color="#FF0044"/>
+    </linearGradient>
+
+    <!-- Subtle Drop Shadow for Play & Crossing elements -->
+    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#0F172A" flood-opacity="0.35"/>
+    </filter>
+  </defs>
+
+  <!-- Container Squircle -->
+  <rect x="2" y="2" width="60" height="60" rx="16" fill="url(#bgGrad)"/>
+  
+  <!-- Subtle inner border highlight -->
+  <rect x="2.5" y="2.5" width="59" height="59" rx="15.5" stroke="#FFFFFF" stroke-opacity="0.3" stroke-width="1"/>
+
+  <!-- High-Speed "X" Crossing Blade (Left-Top to Right-Bottom) -->
+  <path d="M16 16L48 48" stroke="#FFFFFF" stroke-opacity="0.35" stroke-width="4.5" stroke-linecap="round"/>
+
+  <!-- Integrated Video Play & Speed Mark -->
+  <g filter="url(#glow)">
+    <!-- Secondary X Blade (Left-Bottom to Right-Top) with Play Triangle Anchor -->
+    <path d="M16 48L27 37" stroke="#FFFFFF" stroke-width="4.5" stroke-linecap="round"/>
+    <path d="M40 24L48 16" stroke="#FFFFFF" stroke-width="4.5" stroke-linecap="round"/>
+
+    <!-- Centered Modern Video Play Head -->
+    <path d="M26 21C26 19.8 27.3 19 28.3 19.6L42.5 28.6C43.5 29.2 43.5 30.8 42.5 31.4L28.3 40.4C27.3 41 26 40.2 26 39V21Z" fill="#FFFFFF"/>
+
+    <!-- Download Base Speed Tray -->
+    <path d="M17 52H47" stroke="#FFFFFF" stroke-width="3.5" stroke-linecap="round"/>
+    <path d="M17 48V52M47 48V52" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round"/>
+  </g>
+
+  <!-- High-Energy Spark Neon Accent (Top-Right) -->
+  <circle cx="49" cy="15" r="4.5" fill="#00F5D4"/>
+  <circle cx="49" cy="15" r="2" fill="#FFFFFF"/>
+</svg>

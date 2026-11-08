@@ -1,0 +1,77 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 280 56" width="280" height="56" fill="none">
+  <defs>
+    <!-- Background Gradient for White Logo: Deep Indigo to Crimson Flare -->
+    <linearGradient id="logoWhiteBgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0052D4"/>
+      <stop offset="45%" stop-color="#4364F7"/>
+      <stop offset="100%" stop-color="#FF0044"/>
+    </linearGradient>
+
+    <!-- Neon Cyan & Violet Gradient for X on Dark Backgrounds -->
+    <linearGradient id="logoWhiteXGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#00F5D4"/>
+      <stop offset="50%" stop-color="#60A5FA"/>
+      <stop offset="100%" stop-color="#F43F5E"/>
+    </linearGradient>
+
+    <!-- YouTube-style Tube Badge Gradient -->
+    <linearGradient id="tubeBadgeGradWhite" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FF0033"/>
+      <stop offset="100%" stop-color="#E11D48"/>
+    </linearGradient>
+
+    <filter id="logoWhiteGlow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="2" stdDeviation="2.5" flood-color="#000000" flood-opacity="0.4"/>
+    </filter>
+  </defs>
+
+  <!-- Left Icon Emblem: Zen X Video Play Emblem -->
+  <g transform="translate(4, 4)">
+    <!-- Squircle Screen Base -->
+    <rect width="48" height="48" rx="14" fill="url(#logoWhiteBgGrad)"/>
+    <rect x="0.5" y="0.5" width="47" height="47" rx="13.5" stroke="#FFFFFF" stroke-opacity="0.35"/>
+
+    <!-- High-Speed "X" Crossing Blade (Left-Top to Right-Bottom) -->
+    <path d="M13 13L35 35" stroke="#FFFFFF" stroke-opacity="0.35" stroke-width="3.5" stroke-linecap="round"/>
+
+    <!-- Integrated Video Play & Speed Mark -->
+    <g filter="url(#logoWhiteGlow)">
+      <!-- Secondary X Blade (Left-Bottom to Right-Top) with Play Triangle Anchor -->
+      <path d="M13 35L22 26" stroke="#FFFFFF" stroke-width="3.5" stroke-linecap="round"/>
+      <path d="M31 17L35 13" stroke="#FFFFFF" stroke-width="3.5" stroke-linecap="round"/>
+      
+      <!-- Centered Modern Video Play Head -->
+      <path d="M21 16.5C21 15.6 22 15 22.8 15.5L33.2 21.5C34 22 34 23.2 33.2 23.6L22.8 29.6C22 30.1 21 29.5 21 28.6V16.5Z" fill="#FFFFFF"/>
+      
+      <!-- Download Base Speed Tray -->
+      <path d="M14 40H34" stroke="#FFFFFF" stroke-width="2.5" stroke-linecap="round"/>
+      <path d="M14 37V40M34 37V40" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round"/>
+    </g>
+
+    <!-- High-Energy Spark Neon Accent -->
+    <circle cx="37" cy="11" r="3.5" fill="#00F5D4"/>
+    <circle cx="37" cy="11" r="1.5" fill="#FFFFFF"/>
+  </g>
+
+  <!-- Typography: Zen X Tube (White Mode) -->
+  <g transform="translate(62, 0)">
+    <!-- ZenX Main Brand -->
+    <text x="0" y="32" font-family="'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="25" font-weight="800" fill="#FFFFFF" letter-spacing="-0.5">Zen<tspan fill="url(#logoWhiteXGrad)" font-weight="900">X</tspan></text>
+    
+    <!-- Red Video Tube Badge -->
+    <g transform="translate(66, 11)">
+      <!-- Badge Body -->
+      <rect width="78" height="25" rx="7" fill="url(#tubeBadgeGradWhite)"/>
+      <rect x="0.5" y="0.5" width="77" height="24" rx="6.5" stroke="#FFFFFF" stroke-opacity="0.3"/>
+      
+      <!-- Mini Play Triangle inside Tube Badge -->
+      <path d="M12 7.5L18.5 12.5L12 17.5V7.5Z" fill="#FFFFFF"/>
+      
+      <!-- "Tube" Text inside Badge -->
+      <text x="23" y="17.5" font-family="'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="13.5" font-weight="900" fill="#FFFFFF" letter-spacing="0.4">TUBE</text>
+    </g>
+
+    <!-- Subtitle Line -->
+    <text x="1" y="47" font-family="'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="8.5" font-weight="700" fill="#94A3B8" letter-spacing="1.2">FAST ONLINE VIDEO ENGINE</text>
+  </g>
+</svg>

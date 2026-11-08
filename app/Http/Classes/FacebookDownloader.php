@@ -1,12 +1,20 @@
 <?php
 namespace App\Http\Classes;
 
+use App\Services\Api\SsrfProtectionService;
 
 class FacebookDownloader
 {
     public $data;
 
     public function getVideoInfo($url){
+        // SSRF guard: only fetch publicly-resolvable http(s) targets
+        list($isSafe, $riskReason) = SsrfProtectionService::validateUrl($url);
+        if (!$isSafe) {
+            $this->data = null;
+            return false;
+        }
+
         $context = [
             'http' => [
                 'method' => 'GET',

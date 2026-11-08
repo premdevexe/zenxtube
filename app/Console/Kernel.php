@@ -24,8 +24,8 @@ class Kernel extends ConsoleKernel
      */
     protected function schedule(Schedule $schedule)
     {
-        // $schedule->command('inspire')
-        //          ->hourly();
+        // Automatically delete downloaded storage files older than 15 minutes every 5 minutes
+        $schedule->command('downloads:clean --minutes=15')->everyFiveMinutes();
     }
 
     /**

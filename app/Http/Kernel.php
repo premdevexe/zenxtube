@@ -59,5 +59,11 @@ class Kernel extends HttpKernel
         'guest' => \App\Http\Middleware\RedirectIfAuthenticated::class,
         'signed' => \Illuminate\Routing\Middleware\ValidateSignature::class,
         'throttle' => \Illuminate\Routing\Middleware\ThrottleRequests::class,
+        'admin' => \App\Http\Middleware\AdminMiddleware::class,
+        'api.auth' => \App\Http\Middleware\Api\ApiAuthenticate::class,
+        'api.rate_limit' => \App\Http\Middleware\Api\ApiRateLimiter::class,
+        'api.logger' => \App\Http\Middleware\Api\ApiLogger::class,
+        'api.maintenance' => \App\Http\Middleware\Api\ApiMaintenanceMode::class,
+        'api.client' => \App\Http\Middleware\Api\VerifyApiClient::class,
     ];
 }

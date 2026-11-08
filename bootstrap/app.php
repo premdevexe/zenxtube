@@ -1,5 +1,23 @@
 <?php
 
+// PHP 8.1+ / 8.2 compatibility for Symfony 4 & Laravel 5.6:
+// PHP 8.1 added 'full_path' to $_FILES. Symfony 4's FileBag expects exactly 5 keys
+// ('error', 'name', 'size', 'tmp_name', 'type'). If 'full_path' is present, Symfony treats
+// files as nested string arrays, causing UploadedFile::createFromBase fatal type errors.
+if (!empty($_FILES)) {
+    $stripFullPath = function (&$files) use (&$stripFullPath) {
+        foreach ($files as &$file) {
+            if (is_array($file)) {
+                unset($file['full_path']);
+                if (isset($file['name']) && is_array($file['name'])) {
+                    $stripFullPath($file);
+                }
+            }
+        }
+    };
+    $stripFullPath($_FILES);
+}
+
 /*
 |--------------------------------------------------------------------------
 | Create The Application

@@ -30,18 +30,18 @@
                 <table class="table table-hover table-striped">
                     <thead>
                     <tr class="headerRow">
-                        <th>Format</th>
+                        <th>Quality</th>
                         <th>Downloads</th>
                     </tr>
                     </thead>
                     <tbody>
                         <tr>
                             <td>HD Quality</td>
-                            <td><a download target="_blank" href="{{$videoData['hd_download_url']}}" class="btn btn-primary">Download</a></td>
+                            <td><a download target="_blank" href="{{$videoData['hd_download_url']}}" class="btn btn-primary font-weight-bold"><i class="fa fa-video-camera mr-1"></i> Download MP4</a></td>
                         </tr>
                         <tr>
                             <td>Low Quality</td>
-                            <td><a download target="_blank" href="{{$videoData['sd_download_url']}}" class="btn btn-primary">Download</a></td>
+                            <td><a download target="_blank" href="{{$videoData['sd_download_url']}}" class="btn btn-primary font-weight-bold"><i class="fa fa-video-camera mr-1"></i> Download MP4</a></td>
                         </tr>
                     </tbody>
                 </table>

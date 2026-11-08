@@ -1,0 +1,344 @@
+{
+  "info": {
+    "name": "Zen X Download - Enterprise API Platform v1",
+    "description": "Production Postman collection covering System Diagnostics, Device Authentication, Rotating Tokens, SSRF-Guarded Media Extraction, and Parallel File Downloads.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://127.0.0.1:8000/api/v1",
+      "type": "string"
+    },
+    {
+      "key": "client_id",
+      "value": "zenx-android-v1",
+      "type": "string"
+    },
+    {
+      "key": "access_token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "refresh_token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "job_uuid",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "download_token",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "01. System & Config",
+      "item": [
+        {
+          "name": "GET Status",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/status",
+              "host": ["{{base_url}}"],
+              "path": ["status"]
+            }
+          }
+        },
+        {
+          "name": "GET Public Config",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/config",
+              "host": ["{{base_url}}"],
+              "path": ["config"]
+            }
+          }
+        },
+        {
+          "name": "GET App Version Check",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/app/version?platform=android&current_version=1.0.0",
+              "host": ["{{base_url}}"],
+              "path": ["app", "version"],
+              "query": [
+                { "key": "platform", "value": "android" },
+                { "key": "current_version", "value": "1.0.0" }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "02. Device Authentication",
+      "item": [
+        {
+          "name": "Register Device",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "if (jsonData.success && jsonData.data.auth) {",
+                  "    pm.collectionVariables.set('access_token', jsonData.data.auth.access_token);",
+                  "    pm.collectionVariables.set('refresh_token', jsonData.data.auth.refresh_token);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Accept", "value": "application/json" },
+              { "key": "X-Client-ID", "value": "{{client_id}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"device_uuid\": \"postman_device_uuid_001\",\n  \"platform\": \"android\",\n  \"device_model\": \"Samsung Galaxy S24 Ultra\",\n  \"os_version\": \"Android 14\",\n  \"app_version\": \"1.0.0\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/device/register",
+              "host": ["{{base_url}}"],
+              "path": ["device", "register"]
+            }
+          }
+        },
+        {
+          "name": "Refresh Token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "if (jsonData.success && jsonData.data.auth) {",
+                  "    pm.collectionVariables.set('access_token', jsonData.data.auth.access_token);",
+                  "    pm.collectionVariables.set('refresh_token', jsonData.data.auth.refresh_token);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refresh_token\": \"{{refresh_token}}\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/refresh",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "refresh"]
+            }
+          }
+        },
+        {
+          "name": "GET Auth Me",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{access_token}}" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/me",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "me"]
+            }
+          }
+        },
+        {
+          "name": "POST Logout",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{access_token}}" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/logout",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "logout"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "03. Media Extraction & SSRF Guard",
+      "item": [
+        {
+          "name": "Extract Video Info",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"url\": \"https://www.youtube.com/watch?v=dQw4w9WgXcQ\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/video/info",
+              "host": ["{{base_url}}"],
+              "path": ["video", "info"]
+            }
+          }
+        },
+        {
+          "name": "SSRF Block Test (Localhost)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"url\": \"http://127.0.0.1:8000/admin\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/video/info",
+              "host": ["{{base_url}}"],
+              "path": ["video", "info"]
+            }
+          }
+        },
+        {
+          "name": "SSRF Block Test (Cloud Metadata)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"url\": \"http://169.254.169.254/latest/meta-data\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/video/info",
+              "host": ["{{base_url}}"],
+              "path": ["video", "info"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "04. Media Downloads & Streaming",
+      "item": [
+        {
+          "name": "Create Download Job",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "if (jsonData.success && jsonData.data) {",
+                  "    pm.collectionVariables.set('job_uuid', jsonData.data.job_uuid);",
+                  "    pm.collectionVariables.set('download_token', jsonData.data.download_token);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{access_token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"url\": \"https://www.youtube.com/watch?v=dQw4w9WgXcQ\",\n  \"type\": \"video\",\n  \"height\": 720\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/download",
+              "host": ["{{base_url}}"],
+              "path": ["download"]
+            }
+          }
+        },
+        {
+          "name": "Check Download Status",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/download/{{job_uuid}}/status",
+              "host": ["{{base_url}}"],
+              "path": ["download", "{{job_uuid}}", "status"]
+            }
+          }
+        },
+        {
+          "name": "Stream File",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Range", "value": "bytes=0-1048576" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/download/{{job_uuid}}/file?token={{download_token}}",
+              "host": ["{{base_url}}"],
+              "path": ["download", "{{job_uuid}}", "file"],
+              "query": [
+                { "key": "token", "value": "{{download_token}}" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Download History",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{access_token}}" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/download/history",
+              "host": ["{{base_url}}"],
+              "path": ["download", "history"]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
