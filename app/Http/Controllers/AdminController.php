@@ -927,6 +927,9 @@ class AdminController extends Controller
         }
 
         foreach ($candidates as $candidate) {
+            if (!$isWindows && substr($candidate, -4) === '.exe') {
+                continue;
+            }
             if (file_exists($candidate)) {
                 if (!$isWindows) {
                     @chmod($candidate, 0755);

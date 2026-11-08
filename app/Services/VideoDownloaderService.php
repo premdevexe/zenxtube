@@ -49,7 +49,7 @@ class VideoDownloaderService
                 }
             }
 
-            return base_path("{$name}.exe");
+            return null;
         } else {
             // Linux / Unix / Shared Hosting / VPS: NEVER use .exe binaries!
             $candidates = [
@@ -62,28 +62,22 @@ class VideoDownloaderService
             ];
 
             foreach ($candidates as $cand) {
-                if (file_exists($cand)) {
+                if (file_exists($cand) && substr($cand, -4) !== '.exe') {
                     @chmod($cand, 0755);
                     return $cand;
                 }
             }
 
             // Check system PATH via 'which'
-            $whichOutput = trim((string)@shell_exec('which ' . escapeshellarg($name) . ' 2>/dev/null'));
-            if (!empty($whichOutput) && file_exists($whichOutput)) {
-                @chmod($whichOutput, 0755);
-                return $whichOutput;
-            }
-
-            // If yt-dlp is missing on Linux, auto-provision standalone binary if bin/ is writable
-            if ($name === 'yt-dlp') {
-                $target = base_path('bin/yt-dlp');
-                if ($this->autoDownloadLinuxYtDlp($target)) {
-                    return $target;
+            if (function_exists('shell_exec')) {
+                $whichOutput = trim((string)@shell_exec('which ' . escapeshellarg($name) . ' 2>/dev/null'));
+                if (!empty($whichOutput) && file_exists($whichOutput)) {
+                    @chmod($whichOutput, 0755);
+                    return $whichOutput;
                 }
             }
 
-            return base_path("bin/{$name}");
+            return null;
         }
     }
 
@@ -117,6 +111,41 @@ class VideoDownloaderService
         }
 
         return false;
+    }
+
+    /**
+     * Check if binary CLI execution is possible in the current hosting environment.
+     */
+    public function canExecuteBinary()
+    {
+        if (!function_exists('proc_open')) {
+            return false;
+        }
+
+        $disabled = explode(',', (string)ini_get('disable_functions'));
+        $disabled = array_map('trim', $disabled);
+        if (in_array('proc_open', $disabled, true) || in_array('shell_exec', $disabled, true)) {
+            return false;
+        }
+
+        if (empty($this->binaryPath) || !file_exists($this->binaryPath)) {
+            return false;
+        }
+
+        $isWindows = strtoupper(substr(PHP_OS, 0, 3)) === 'WIN';
+        if (!$isWindows) {
+            if (substr($this->binaryPath, -4) === '.exe') {
+                return false;
+            }
+            if (!is_executable($this->binaryPath)) {
+                @chmod($this->binaryPath, 0755);
+            }
+            if (!is_executable($this->binaryPath)) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /**
@@ -197,7 +226,22 @@ class VideoDownloaderService
             return Cache::get($cacheKey);
         }
 
-        $playlistData = $this->fetchPlaylistInfoDirect($url);
+        $playlistData = null;
+
+        // Strategy 1: CLI binary (if available and executable)
+        if ($this->canExecuteBinary()) {
+            $playlistData = $this->fetchPlaylistInfoDirect($url);
+        }
+
+        // Strategy 2: 100% Native PHP extraction engine (shared hosting fallback)
+        if (!$playlistData || empty($playlistData['video'])) {
+            $nativeExtractor = app(NativeMediaExtractorService::class);
+            $playlistData = $nativeExtractor->getPlaylistInfo($url);
+            if (!$playlistData && empty($this->lastError)) {
+                $this->lastError = $nativeExtractor->getLastError();
+            }
+        }
+
         if ($playlistData && !empty($playlistData['video'])) {
             Cache::put($cacheKey, $playlistData, 120);
         }
@@ -275,7 +319,22 @@ class VideoDownloaderService
             return Cache::get($cacheKey);
         }
 
-        $videoInfo = $this->fetchVideoInfoDirect($url);
+        $videoInfo = null;
+
+        // Strategy 1: Attempt CLI binary if host environment supports it
+        if ($this->canExecuteBinary()) {
+            $videoInfo = $this->fetchVideoInfoDirect($url);
+        }
+
+        // Strategy 2: 100% Native PHP extraction engine (shared hosting & cPanel fallback)
+        if (!$videoInfo || (empty($videoInfo['merged_options']) && empty($videoInfo['links']))) {
+            $nativeExtractor = app(NativeMediaExtractorService::class);
+            $videoInfo = $nativeExtractor->getVideoInfo($url);
+            if (!$videoInfo && empty($this->lastError)) {
+                $this->lastError = $nativeExtractor->getLastError();
+            }
+        }
+
         if ($videoInfo && (!empty($videoInfo['merged_options']) || !empty($videoInfo['links']))) {
             Cache::put($cacheKey, $videoInfo, 120);
         }
@@ -455,40 +514,32 @@ class VideoDownloaderService
         }
 
         $hash = md5($url . '_' . $type . '_' . $height);
+        $ext = ($type === 'audio') ? 'mp3' : 'mp4';
+        $targetFile = $outputDir . DIRECTORY_SEPARATOR . $hash . '.' . $ext;
 
-        // Core high-speed download parameters:
-        // -N 8: 8 concurrent fragment connections (accelerates DASH/HLS fragment downloads up to 8x)
-        // --http-chunk-size 10M: chunk-based HTTP downloading to bypass YouTube bandwidth throttler
-        // --buffer-size 1024K: 1MB I/O buffer to eliminate write bottlenecks
-        // --ffmpeg-location: direct absolute path so yt-dlp doesn't waste time searching PATH
-        // --socket-timeout 15: prevent hanging on slow responses
-        // --retries 3 --fragment-retries 3: rapid recovery
-        // --no-playlist: only download the requested item
-        // --no-check-certificates: skip redundant SSL cert validation
-        // --no-warnings: silent execution
-        // --postprocessor-args "ffmpeg:-threads 4": multi-threaded FFmpeg encoding/muxing
-        $commonFlags = array_merge($this->getBaseFlags(25), [
-            '-N 8',
-            '--http-chunk-size 10M',
-            '--buffer-size 1024K',
-            '--ffmpeg-location', escapeshellarg($this->ffmpegPath),
-            '--retries 3',
-            '--fragment-retries 3',
-            '--no-playlist',
-            '--postprocessor-args', escapeshellarg('ffmpeg:-threads 4'),
-        ]);
-
-        if (stripos($url, 'youtube.com') !== false || stripos($url, 'youtu.be') !== false) {
-            $commonFlags[] = '--extractor-args';
-            $commonFlags[] = escapeshellarg('youtube:player_client=android,web;skip=translated_subs,comments');
+        if (file_exists($targetFile) && filesize($targetFile) > 1024) {
+            return $targetFile;
         }
 
-        if ($type === 'audio') {
-            $targetFile = $outputDir . DIRECTORY_SEPARATOR . $hash . '.mp3';
-            if (!file_exists($targetFile)) {
-                // Audio speed optimization:
-                // -f "ba/b": ONLY download the audio stream (never download large video stream)
-                // -x --audio-format mp3 --audio-quality 0: convert to high-fidelity MP3 using 4 CPU threads
+        // Strategy 1: CLI merge (if binary and FFmpeg are available and executable)
+        if ($this->canExecuteBinary() && !empty($this->ffmpegPath) && file_exists($this->ffmpegPath)) {
+            $commonFlags = array_merge($this->getBaseFlags(25), [
+                '-N 8',
+                '--http-chunk-size 10M',
+                '--buffer-size 1024K',
+                '--ffmpeg-location', escapeshellarg($this->ffmpegPath),
+                '--retries 3',
+                '--fragment-retries 3',
+                '--no-playlist',
+                '--postprocessor-args', escapeshellarg('ffmpeg:-threads 4'),
+            ]);
+
+            if (stripos($url, 'youtube.com') !== false || stripos($url, 'youtu.be') !== false) {
+                $commonFlags[] = '--extractor-args';
+                $commonFlags[] = escapeshellarg('youtube:player_client=android,web;skip=translated_subs,comments');
+            }
+
+            if ($type === 'audio') {
                 $cmdArgs = array_merge($commonFlags, [
                     '-f', escapeshellarg('ba/b'),
                     '-x',
@@ -498,15 +549,8 @@ class VideoDownloaderService
                     escapeshellarg($url)
                 ]);
                 $this->runCommand(implode(' ', $cmdArgs));
-            }
-            return file_exists($targetFile) ? $targetFile : null;
-        } else {
-            $targetFile = $outputDir . DIRECTORY_SEPARATOR . $hash . '.mp4';
-            if (!file_exists($targetFile)) {
+            } else {
                 $h = intval($height) > 0 ? intval($height) : 720;
-                // Video speed optimization:
-                // Prioritize matching MP4 video + M4A audio.
-                // When container formats match, FFmpeg does an instant stream copy (muxing in ~1 sec, NO re-encoding!).
                 $formatSelector = 'bv*[height<=' . $h . '][ext=mp4]+ba[ext=m4a]/bv*[height<=' . $h . ']+ba/b[height<=' . $h . ']/best';
                 $cmdArgs = array_merge($commonFlags, [
                     '-f', escapeshellarg($formatSelector),
@@ -516,8 +560,62 @@ class VideoDownloaderService
                 ]);
                 $this->runCommand(implode(' ', $cmdArgs));
             }
-            return file_exists($targetFile) ? $targetFile : null;
+
+            if (file_exists($targetFile) && filesize($targetFile) > 1024) {
+                return $targetFile;
+            }
         }
+
+        // Strategy 2: 100% Native PHP Downloader (pure cURL streaming for shared hosting / cPanel)
+        $nativeExtractor = app(NativeMediaExtractorService::class);
+        $info = $this->getVideoInfo($url);
+
+        if ($info && !empty($info['links'])) {
+            $chosenUrl = null;
+
+            if ($type === 'audio') {
+                foreach ($info['links'] as $link) {
+                    if (!empty($link['has_audio']) && empty($link['has_video']) && !empty($link['url'])) {
+                        $chosenUrl = $link['url'];
+                        break;
+                    }
+                }
+            } else {
+                $targetHeight = (int)$height;
+                // Prefer combined video+audio stream (e.g. Itag 18)
+                foreach ($info['links'] as $link) {
+                    if (!empty($link['has_video']) && !empty($link['has_audio']) && !empty($link['url'])) {
+                        $chosenUrl = $link['url'];
+                        break;
+                    }
+                }
+                // Or match requested height
+                if (!$chosenUrl) {
+                    foreach ($info['links'] as $link) {
+                        if (!empty($link['has_video']) && !empty($link['url'])) {
+                            if (strpos($link['format'], "{$targetHeight}p") !== false) {
+                                $chosenUrl = $link['url'];
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Fallback to first available stream
+            if (!$chosenUrl && !empty($info['links'][0]['url'])) {
+                $chosenUrl = $info['links'][0]['url'];
+            }
+
+            if ($chosenUrl) {
+                $downloadOk = $nativeExtractor->downloadDirectToFile($chosenUrl, $targetFile, 300);
+                if ($downloadOk && file_exists($targetFile) && filesize($targetFile) > 1024) {
+                    return $targetFile;
+                }
+            }
+        }
+
+        return (file_exists($targetFile) && filesize($targetFile) > 1024) ? $targetFile : null;
     }
 
     /**

@@ -13,7 +13,7 @@ yarn-error.log
 .env
 
 # Large native binaries (>100MB or duplicated) - do not commit
-/ffmpeg.exe
+*.exe
 /bin/
 
 # Archives & lock state
