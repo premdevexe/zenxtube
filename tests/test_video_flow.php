@@ -124,3 +124,4 @@ if ($mergedFile && file_exists($mergedFile) && filesize($mergedFile) > 1024) {
 echo "\n=====================================================\n";
 echo "                 ALL CHECKS PASSED                   \n";
 echo "=====================================================\n";
+

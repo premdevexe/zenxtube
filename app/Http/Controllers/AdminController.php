@@ -276,6 +276,8 @@ class AdminController extends Controller
 
         $totalStorageMB = round($totalBytes / (1024 * 1024), 2);
 
+        $isWindows = strtoupper(substr(PHP_OS, 0, 3)) === 'WIN';
+
         $systemInfo = [
             'php_version' => PHP_VERSION,
             'laravel_version' => app()->version(),
@@ -285,8 +287,8 @@ class AdminController extends Controller
             'upload_max_filesize' => ini_get('upload_max_filesize'),
             'post_max_size' => ini_get('post_max_size'),
             'memory_limit' => ini_get('memory_limit'),
-            'ytdlp_path' => $this->resolveBinary('yt-dlp') ?: base_path('yt-dlp.exe'),
-            'ffmpeg_path' => $this->resolveBinary('ffmpeg') ?: base_path('ffmpeg.exe'),
+            'ytdlp_path' => $this->resolveBinary('yt-dlp') ?: ($isWindows ? base_path('bin/yt-dlp.exe') : '/usr/local/bin/yt-dlp'),
+            'ffmpeg_path' => $this->resolveBinary('ffmpeg') ?: ($isWindows ? base_path('bin/ffmpeg.exe') : '/usr/bin/ffmpeg'),
         ];
 
         // Installer Core Telemetry
@@ -659,6 +661,14 @@ class AdminController extends Controller
                         ->withErrors([$fileKey => 'The ' . $settingKey . ' file type is not allowed (detected: ' . $mime . ').']);
                 }
 
+                if ($extension === 'svg') {
+                    $svgContent = @file_get_contents($tmpPath);
+                    if ($svgContent && preg_match('/<script|javascript:|onload|onerror|onclick/i', $svgContent)) {
+                        return redirect()->back()->withInput($data)
+                            ->withErrors([$fileKey => 'The uploaded SVG contains unsafe or executable script content.']);
+                    }
+                }
+
                 $fileName = 'site-' . $settingKey . '-' . md5(uniqid('', true)) . '.' . $extension;
                 $targetDir = public_path('uploads');
                 if (!is_dir($targetDir)) {
@@ -909,9 +919,16 @@ class AdminController extends Controller
             $candidates = [
                 base_path('bin/' . $binary . '.exe'),
                 base_path($binary . '.exe'),
-                base_path('bin/' . $binary),
-                base_path($binary),
             ];
+            if (function_exists('shell_exec')) {
+                $where = trim((string)@shell_exec('where ' . escapeshellarg($binary . '.exe') . ' 2>nul'));
+                if (!empty($where)) {
+                    $firstLine = explode("\n", str_replace("\r", "", $where))[0];
+                    if (file_exists($firstLine)) {
+                        $candidates[] = $firstLine;
+                    }
+                }
+            }
         } else {
             $candidates = [
                 base_path('bin/' . $binary),
@@ -928,6 +945,9 @@ class AdminController extends Controller
 
         foreach ($candidates as $candidate) {
             if (!$isWindows && substr($candidate, -4) === '.exe') {
+                continue;
+            }
+            if ($isWindows && strtolower(substr($candidate, -4)) !== '.exe') {
                 continue;
             }
             if (file_exists($candidate)) {
