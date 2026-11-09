@@ -491,7 +491,14 @@ class AdminController extends Controller
     {
         $settings = SiteSetting::allSettings();
 
-        return view('admin.settings', compact('settings'));
+        // YouTube Cookies Telemetry
+        $cookiePath = storage_path('app/cookies.txt');
+        $hasCookies = file_exists($cookiePath) && filesize($cookiePath) > 0;
+        $cookieSize = $hasCookies ? round(filesize($cookiePath) / 1024, 1) . ' KB' : '0 KB';
+        $cookieLines = $hasCookies ? count(file($cookiePath)) : 0;
+        $cookieUpdated = $hasCookies ? date('Y-m-d H:i:s', filemtime($cookiePath)) : null;
+
+        return view('admin.settings', compact('settings', 'hasCookies', 'cookieSize', 'cookieLines', 'cookieUpdated'));
     }
 
     /**
@@ -732,6 +739,32 @@ class AdminController extends Controller
                 }
                 SiteSetting::set($settingKey, 'default', 'general');
             }
+        }
+
+        // YouTube Cookies Management
+        $cookiePath = storage_path('app/cookies.txt');
+        if (isset($data['clear_youtube_cookies']) && $data['clear_youtube_cookies'] === '1') {
+            if (file_exists($cookiePath)) {
+                @unlink($cookiePath);
+            }
+        } elseif (!empty($_FILES['youtube_cookies_file']['tmp_name']) && is_uploaded_file($_FILES['youtube_cookies_file']['tmp_name'])) {
+            $tmpPath = $_FILES['youtube_cookies_file']['tmp_name'];
+            $dir = dirname($cookiePath);
+            if (!file_exists($dir)) {
+                @mkdir($dir, 0755, true);
+            }
+            @move_uploaded_file($tmpPath, $cookiePath);
+        } elseif (!empty($data['youtube_cookies_text'])) {
+            $dir = dirname($cookiePath);
+            if (!file_exists($dir)) {
+                @mkdir($dir, 0755, true);
+            }
+            file_put_contents($cookiePath, trim($data['youtube_cookies_text']));
+        }
+
+        // YouTube Proxy Setting
+        if (isset($data['youtube_proxy'])) {
+            SiteSetting::set('youtube_proxy', trim($data['youtube_proxy']), 'general');
         }
 
         return redirect()->route('admin.settings')->with('success', 'Site settings have been saved successfully.');

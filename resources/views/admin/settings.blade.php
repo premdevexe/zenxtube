@@ -295,6 +295,59 @@
                 </div>
             </div>
 
+            <!-- ============ YOUTUBE ENGINE & COOKIES ============ -->
+            <div class="col-lg-6 col-12 mb-4">
+                <div class="card border-0 shadow-sm bg-white h-100" style="border-left: 4px solid #ff0000;">
+                    <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="font-weight-bold text-dark mb-0"><i class="fa fa-youtube-play text-danger mr-1"></i> YouTube Engine &amp; Cookies</h6>
+                            <small class="text-muted">Bypass rate limits &amp; age-restrictions</small>
+                        </div>
+                        <div>
+                            @if(!empty($hasCookies))
+                                <span class="badge badge-success text-white py-1 px-2"><i class="fa fa-check mr-1"></i> Active ({{ $cookieSize }})</span>
+                            @else
+                                <span class="badge badge-secondary py-1 px-2 border">No Cookies</span>
+                            @endif
+                        </div>
+                    </div>
+                    <div class="card-body p-4">
+                        <div class="alert alert-info py-2 px-3 small mb-3">
+                            <i class="fa fa-info-circle mr-1"></i>
+                            <strong>Tip:</strong> YouTube blocks datacenter/VPS IPs with "Sign in to confirm you're not a bot". Uploading cookies from any standard browser session permanently resolves bot rate limits and unlocks 1080p, 4K, and age-gated videos.
+                        </div>
+
+                        <div class="form-group mb-3">
+                            <label class="small text-secondary font-weight-bold mb-1" for="youtube_cookies_file">Upload cookies.txt File</label>
+                            <input type="file" name="youtube_cookies_file" id="youtube_cookies_file" accept=".txt,text/plain" class="form-control-file form-control-sm">
+                            <small class="text-muted">Export using the Chrome/Firefox extension <em>"Get cookies.txt LOCALLY"</em>.</small>
+                        </div>
+
+                        <div class="form-group mb-3">
+                            <label class="small text-secondary font-weight-bold mb-1" for="youtube_cookies_text">Or Paste cookies.txt Content</label>
+                            <textarea name="youtube_cookies_text" id="youtube_cookies_text" rows="3" class="form-control form-control-sm font-monospace" placeholder="# Netscape HTTP Cookie File&#10;.youtube.com	TRUE	/	TRUE	..."></textarea>
+                        </div>
+
+                        @if(!empty($hasCookies))
+                            <div class="custom-control custom-checkbox mb-3">
+                                <input type="checkbox" class="custom-control-input" id="clear_youtube_cookies" name="clear_youtube_cookies" value="1">
+                                <label class="custom-control-label small text-danger font-weight-bold" for="clear_youtube_cookies">
+                                    <i class="fa fa-trash-o mr-1"></i> Remove currently active cookies.txt ({{ $cookieLines }} lines, last modified {{ $cookieUpdated }})
+                                </label>
+                            </div>
+                        @endif
+
+                        <div class="form-group mb-0">
+                            <label class="small text-secondary font-weight-bold mb-1" for="youtube_proxy">Outbound Proxy (Optional)</label>
+                            <input type="text" name="youtube_proxy" id="youtube_proxy" class="form-control form-control-sm"
+                                   value="{{ old('youtube_proxy', $settings['youtube_proxy'] ?? '') }}"
+                                   placeholder="http://proxy-ip:port or socks5://user:pass@proxy-ip:port">
+                            <small class="text-muted">Route YouTube requests through a rotating proxy or residential IP.</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <!-- ============ MAINTENANCE MODE ============ -->
             <div class="col-lg-6 col-12 mb-4">
                 <div class="card border-0 shadow-sm bg-white h-100" style="border-left: 4px solid #dc3545;">

@@ -133,15 +133,19 @@ class NativeMediaExtractorService
             return null;
         }
 
-        // Tier 1: Modern Android Innertube Client
+        // Tier 1: Modern Android Embed Client (bypasses bot challenges on cloud & datacenter IPs)
         $innertubeData = $this->queryYouTubeInnertube($videoId, 'ANDROID', '21.26.364', [
             'androidSdkVersion' => 30,
             'userAgent' => 'com.google.android.youtube/21.26.364 (Linux; U; Android 11) gzip',
             'osName' => 'Android',
             'osVersion' => '11',
+            'clientScreen' => 'EMBED',
         ], 'com.google.android.youtube/21.26.364 (Linux; U; Android 11) gzip', [
             'X-YouTube-Client-Name: 3',
-            'X-YouTube-Client-Version: 21.26.364'
+            'X-YouTube-Client-Version: 21.26.364',
+            'Referer: https://www.youtube.com/'
+        ], [
+            'embedUrl' => "https://www.youtube.com/embed/{$videoId}"
         ]);
 
         $androidPlayable = ($innertubeData && ($innertubeData['playabilityStatus']['status'] ?? '') === 'OK' && $this->hasDirectStreamUrls($innertubeData));
@@ -163,35 +167,38 @@ class NativeMediaExtractorService
             return $this->formatInnertubeVideoInfo($innertubeData, $videoId);
         }
 
-        // Tier 3: ANDROID_VR fallback if still no working stream
-        $vrData = $this->queryYouTubeInnertube($videoId, 'ANDROID_VR', '1.65.10', [
-            'deviceMake' => 'Oculus',
-            'deviceModel' => 'Quest 3',
-            'androidSdkVersion' => 32,
-        ], 'com.google.android.apps.youtube.vr.oculus/1.65.10 (Linux; U; Android 12L; Quest 3) gzip', [
-            'X-YouTube-Client-Name: 28',
-            'X-YouTube-Client-Version: 1.65.10'
-        ]);
-        if ($vrData && ($vrData['playabilityStatus']['status'] ?? '') === 'OK' && $this->hasDirectStreamUrls($vrData)) {
-            return $this->formatInnertubeVideoInfo($vrData, $videoId);
-        }
-
-        // Tier 4: iOS fallback
+        // Tier 3: iOS Embed Client Fallback
         $iosData = $this->queryYouTubeInnertube($videoId, 'IOS', '21.26.4', [
             'deviceMake' => 'Apple',
             'deviceModel' => 'iPhone16,2',
             'osName' => 'iPhone',
             'osVersion' => '18.3.2.22D82',
+            'clientScreen' => 'EMBED',
         ], 'com.google.ios.youtube/21.26.4 (iPhone16,2; U; CPU iOS 18_3_2 like Mac OS X;)', [
             'X-YouTube-Client-Name: 5',
-            'X-YouTube-Client-Version: 21.26.4'
+            'X-YouTube-Client-Version: 21.26.4',
+            'Referer: https://www.youtube.com/'
+        ], [
+            'embedUrl' => "https://www.youtube.com/embed/{$videoId}"
         ]);
         if ($iosData && ($iosData['playabilityStatus']['status'] ?? '') === 'OK' && $this->hasDirectStreamUrls($iosData)) {
             return $this->formatInnertubeVideoInfo($iosData, $videoId);
         }
 
+        // Tier 4: Web Embed Fallback
+        $webData = $this->queryYouTubeInnertube($videoId, 'WEB', '2.20240313.01.00', [
+            'clientScreen' => 'EMBED',
+        ], 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36', [
+            'Referer: https://www.youtube.com/'
+        ], [
+            'embedUrl' => "https://www.youtube.com/embed/{$videoId}"
+        ]);
+        if ($webData && ($webData['playabilityStatus']['status'] ?? '') === 'OK' && $this->hasDirectStreamUrls($webData)) {
+            return $this->formatInnertubeVideoInfo($webData, $videoId);
+        }
+
         // Capture most specific failure reason across tested clients
-        $reason = $innertubeData['playabilityStatus']['reason'] ?? $vrData['playabilityStatus']['reason'] ?? $iosData['playabilityStatus']['reason'] ?? null;
+        $reason = $innertubeData['playabilityStatus']['reason'] ?? $iosData['playabilityStatus']['reason'] ?? $webData['playabilityStatus']['reason'] ?? null;
         if (!empty($reason)) {
             $this->lastError = $reason;
         } else {
@@ -592,9 +599,17 @@ class NativeMediaExtractorService
     /**
      * Query YouTube Innertube API endpoint with custom client configuration.
      */
-    protected function queryYouTubeInnertube($videoId, $clientName, $clientVersion, array $extraClient = [], $userAgent = null, array $extraHeaders = [])
+    protected function queryYouTubeInnertube($videoId, $clientName, $clientVersion, array $extraClient = [], $userAgent = null, array $extraHeaders = [], array $extraThirdParty = [])
     {
         $url = 'https://www.youtube.com/youtubei/v1/player?prettyPrint=false';
+
+        // Auto-attach visitorData session token if not explicitly passed
+        if (empty($extraClient['visitorData'])) {
+            $visitorData = $this->getYouTubeVisitorData($videoId);
+            if ($visitorData) {
+                $extraClient['visitorData'] = $visitorData;
+            }
+        }
 
         $clientConfig = array_merge([
             'clientName' => $clientName,
@@ -612,6 +627,10 @@ class NativeMediaExtractorService
             'racyCheckOk' => true,
         ];
 
+        if (!empty($extraThirdParty)) {
+            $payload['context']['thirdParty'] = $extraThirdParty;
+        }
+
         $headers = [
             'Content-Type: application/json',
             'User-Agent: ' . ($userAgent ?: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36')
@@ -620,13 +639,31 @@ class NativeMediaExtractorService
             $headers = array_merge($headers, $extraHeaders);
         }
 
+        $hasReferer = false;
+        foreach ($headers as $h) {
+            if (stripos($h, 'Referer:') === 0) {
+                $hasReferer = true;
+                break;
+            }
+        }
+        if (!$hasReferer) {
+            $headers[] = 'Referer: https://www.youtube.com/';
+        }
+
         $ch = curl_init($url);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_POST, true);
         curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload));
         curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
-        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true);
-        curl_setopt($ch, CURLOPT_TIMEOUT, 12);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+        curl_setopt($ch, CURLOPT_IPRESOLVE, CURL_IPRESOLVE_V4);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 10);
+
+        // Auto-detect proxy
+        $proxy = \App\SiteSetting::get('youtube_proxy') ?: env('YTDLP_PROXY') ?: env('HTTP_PROXY');
+        if ($proxy) {
+            curl_setopt($ch, CURLOPT_PROXY, $proxy);
+        }
 
         $cookieFile = $this->getCookieFilePath();
         if ($cookieFile) {
@@ -642,6 +679,31 @@ class NativeMediaExtractorService
         }
 
         return null;
+    }
+
+    /**
+     * Retrieve and cache YouTube visitorData token to establish authenticated device session.
+     */
+    protected function getYouTubeVisitorData($videoId = null)
+    {
+        return Cache::remember('yt_visitor_data_token', 3600, function () use ($videoId) {
+            $targetId = $videoId ?: 'dQw4w9WgXcQ';
+            $embedUrl = "https://www.youtube.com/embed/{$targetId}";
+            $ch = curl_init($embedUrl);
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+            curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
+            curl_setopt($ch, CURLOPT_IPRESOLVE, CURL_IPRESOLVE_V4);
+            curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+            curl_setopt($ch, CURLOPT_USERAGENT, 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36');
+            curl_setopt($ch, CURLOPT_TIMEOUT, 5);
+            $html = (string)curl_exec($ch);
+            curl_close($ch);
+
+            if (preg_match('/"VISITOR_DATA":\s*"([^"]+)"/', $html, $m)) {
+                return $m[1];
+            }
+            return null;
+        });
     }
 
     /**
