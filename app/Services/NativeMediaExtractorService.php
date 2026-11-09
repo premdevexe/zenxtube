@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Services\Api\SsrfProtectionService;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 
 class NativeMediaExtractorService
@@ -143,72 +144,54 @@ class NativeMediaExtractorService
             'X-YouTube-Client-Version: 21.26.364'
         ]);
 
-        $innertubePlayable = ($innertubeData && ($innertubeData['playabilityStatus']['status'] ?? '') === 'OK');
+        $androidPlayable = ($innertubeData && ($innertubeData['playabilityStatus']['status'] ?? '') === 'OK' && $this->hasDirectStreamUrls($innertubeData));
+        $needsHigherQualities = !$androidPlayable || count($innertubeData['streamingData']['formats'] ?? []) <= 1;
 
-        // Check if Innertube returned direct stream URLs
-        $hasDirectUrls = false;
-        if ($innertubePlayable) {
-            foreach ($innertubeData['streamingData']['formats'] ?? [] as $f) {
-                if (!empty($f['url'])) { $hasDirectUrls = true; break; }
-            }
-            if (!$hasDirectUrls) {
-                foreach ($innertubeData['streamingData']['adaptiveFormats'] ?? [] as $f) {
-                    if (!empty($f['url'])) { $hasDirectUrls = true; break; }
-                }
-            }
-        }
-
-        // Tier 2: Invidious API cluster fallback (crucial for music/bot-gated videos requiring 1080p & audio)
+        // Tier 2: Invidious API cluster fallback (for high resolution 1080p, 4K & audio when restricted)
         $invidiousData = null;
-        // Even if Innertube is playable, if it only has 1 format (360p) and no audio/1080p, query Invidious for full qualities
-        $needsHigherQualities = !$hasDirectUrls || count($innertubeData['streamingData']['formats'] ?? []) <= 1;
-        if (!$innertubePlayable || $needsHigherQualities) {
+        if ($needsHigherQualities) {
             $invidiousData = $this->extractYouTubeInvidious($videoId);
         }
 
-        // Tier 3: ANDROID_VR fallback if still no working stream
-        if (!$innertubePlayable && !$invidiousData) {
-            $vrData = $this->queryYouTubeInnertube($videoId, 'ANDROID_VR', '1.65.10', [
-                'deviceMake' => 'Oculus',
-                'deviceModel' => 'Quest 3',
-                'androidSdkVersion' => 32,
-            ], 'com.google.android.apps.youtube.vr.oculus/1.65.10 (Linux; U; Android 12L; Quest 3) gzip', [
-                'X-YouTube-Client-Name: 28',
-                'X-YouTube-Client-Version: 1.65.10'
-            ]);
-            if ($vrData && ($vrData['playabilityStatus']['status'] ?? '') === 'OK') {
-                $innertubeData = $vrData;
-                $innertubePlayable = true;
-            }
-        }
-
-        // Tier 4: iOS fallback
-        if (!$innertubePlayable && !$invidiousData) {
-            $iosData = $this->queryYouTubeInnertube($videoId, 'IOS', '21.26.4', [
-                'deviceMake' => 'Apple',
-                'deviceModel' => 'iPhone16,2',
-                'osName' => 'iPhone',
-                'osVersion' => '18.3.2.22D82',
-            ], 'com.google.ios.youtube/21.26.4 (iPhone16,2; U; CPU iOS 18_3_2 like Mac OS X;)', [
-                'X-YouTube-Client-Name: 5',
-                'X-YouTube-Client-Version: 21.26.4'
-            ]);
-            if ($iosData && ($iosData['playabilityStatus']['status'] ?? '') === 'OK') {
-                $innertubeData = $iosData;
-                $innertubePlayable = true;
-            }
-        }
-
-        // Return best available result
+        // Return Invidious if it succeeded (contains all resolutions + audio)
         if ($invidiousData) {
             return $this->formatInvidiousVideoInfo($invidiousData, $videoId, $innertubeData);
         }
 
-        if ($innertubePlayable && $innertubeData && $hasDirectUrls) {
+        // Return Tier 1 Android stream if playable with direct URLs
+        if ($androidPlayable && $innertubeData) {
             return $this->formatInnertubeVideoInfo($innertubeData, $videoId);
         }
 
-        $reason = $innertubeData['playabilityStatus']['reason'] ?? null;
+        // Tier 3: ANDROID_VR fallback if still no working stream
+        $vrData = $this->queryYouTubeInnertube($videoId, 'ANDROID_VR', '1.65.10', [
+            'deviceMake' => 'Oculus',
+            'deviceModel' => 'Quest 3',
+            'androidSdkVersion' => 32,
+        ], 'com.google.android.apps.youtube.vr.oculus/1.65.10 (Linux; U; Android 12L; Quest 3) gzip', [
+            'X-YouTube-Client-Name: 28',
+            'X-YouTube-Client-Version: 1.65.10'
+        ]);
+        if ($vrData && ($vrData['playabilityStatus']['status'] ?? '') === 'OK' && $this->hasDirectStreamUrls($vrData)) {
+            return $this->formatInnertubeVideoInfo($vrData, $videoId);
+        }
+
+        // Tier 4: iOS fallback
+        $iosData = $this->queryYouTubeInnertube($videoId, 'IOS', '21.26.4', [
+            'deviceMake' => 'Apple',
+            'deviceModel' => 'iPhone16,2',
+            'osName' => 'iPhone',
+            'osVersion' => '18.3.2.22D82',
+        ], 'com.google.ios.youtube/21.26.4 (iPhone16,2; U; CPU iOS 18_3_2 like Mac OS X;)', [
+            'X-YouTube-Client-Name: 5',
+            'X-YouTube-Client-Version: 21.26.4'
+        ]);
+        if ($iosData && ($iosData['playabilityStatus']['status'] ?? '') === 'OK' && $this->hasDirectStreamUrls($iosData)) {
+            return $this->formatInnertubeVideoInfo($iosData, $videoId);
+        }
+
+        // Capture most specific failure reason across tested clients
+        $reason = $innertubeData['playabilityStatus']['reason'] ?? $vrData['playabilityStatus']['reason'] ?? $iosData['playabilityStatus']['reason'] ?? null;
         if (!empty($reason)) {
             $this->lastError = $reason;
         } else {
@@ -386,13 +369,21 @@ class NativeMediaExtractorService
             'https://invidious.drgns.space',
         ];
 
+        // Prioritize cached active instance
+        $cached = Cache::get('active_invidious_instance');
+        if ($cached && in_array($cached, $instances)) {
+            $instances = array_diff($instances, [$cached]);
+            array_unshift($instances, $cached);
+        }
+
         foreach ($instances as $instance) {
             $apiUrl = rtrim($instance, '/') . '/api/v1/videos/' . $videoId;
             $ch = curl_init($apiUrl);
             curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-            curl_setopt($ch, CURLOPT_TIMEOUT, 6);
+            curl_setopt($ch, CURLOPT_TIMEOUT, 4);
+            curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 3);
             curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
-            curl_setopt($ch, CURLOPT_MAXREDIRS, 3);
+            curl_setopt($ch, CURLOPT_MAXREDIRS, 2);
             curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
             curl_setopt($ch, CURLOPT_USERAGENT, 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36');
             $res = curl_exec($ch);
@@ -402,6 +393,7 @@ class NativeMediaExtractorService
             if ($code === 200 && !empty($res)) {
                 $data = json_decode($res, true);
                 if (!empty($data['title']) && (!empty($data['adaptiveFormats']) || !empty($data['formatStreams']))) {
+                    Cache::put('active_invidious_instance', $instance, 14400); // cache for 4 hours
                     return $data;
                 }
             }
@@ -635,6 +627,12 @@ class NativeMediaExtractorService
         curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
         curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true);
         curl_setopt($ch, CURLOPT_TIMEOUT, 12);
+
+        $cookieFile = $this->getCookieFilePath();
+        if ($cookieFile) {
+            curl_setopt($ch, CURLOPT_COOKIEFILE, $cookieFile);
+        }
+
         $res = curl_exec($ch);
         $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
         curl_close($ch);
@@ -643,6 +641,41 @@ class NativeMediaExtractorService
             return json_decode($res, true);
         }
 
+        return null;
+    }
+
+    /**
+     * Determine if an Innertube player response contains direct, playable stream URLs.
+     */
+    protected function hasDirectStreamUrls(?array $data): bool
+    {
+        if (!$data || empty($data['streamingData'])) {
+            return false;
+        }
+        foreach ($data['streamingData']['formats'] ?? [] as $f) {
+            if (!empty($f['url'])) {
+                return true;
+            }
+        }
+        foreach ($data['streamingData']['adaptiveFormats'] ?? [] as $f) {
+            if (!empty($f['url'])) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Resolve YouTube cookies file if present on server.
+     */
+    protected function getCookieFilePath()
+    {
+        if (file_exists(storage_path('app/cookies.txt')) && filesize(storage_path('app/cookies.txt')) > 0) {
+            return storage_path('app/cookies.txt');
+        }
+        if (file_exists(base_path('cookies.txt')) && filesize(base_path('cookies.txt')) > 0) {
+            return base_path('cookies.txt');
+        }
         return null;
     }
 

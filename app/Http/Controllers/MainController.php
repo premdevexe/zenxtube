@@ -59,14 +59,20 @@ class MainController extends Controller
                     $errMsg = "Server environment issue: Downloader binary format mismatch. Please verify the Linux yt-dlp binary is installed in bin/.";
                 } elseif (stripos($detailedError, 'Permission denied') !== false) {
                     $errMsg = "Server permission issue: Execution permission denied on downloader binary. Please run 'chmod 755 bin/yt-dlp'.";
-                } elseif (stripos($detailedError, 'Sign in to confirm you\'re not a bot') !== false || stripos($detailedError, 'HTTP Error 429') !== false) {
-                    $errMsg = "YouTube is temporarily rate-limiting requests from this server IP. Please try again in a few moments or configure cookies in admin.";
+                } elseif (preg_match('/sign in to confirm you(?:’|\'| )?re not a bot/iu', $detailedError) || stripos($detailedError, 'not a bot') !== false || stripos($detailedError, 'bot detection') !== false || stripos($detailedError, 'HTTP Error 429') !== false || stripos($detailedError, 'Too Many Requests') !== false) {
+                    $errMsg = "YouTube is temporarily rate-limiting requests from this server IP. Please try again in a few moments, or configure cookies in storage/app/cookies.txt.";
+                } elseif (stripos($detailedError, 'confirm your age') !== false || stripos($detailedError, 'age-restricted') !== false || stripos($detailedError, 'inappropriate for some users') !== false || stripos($detailedError, 'content warning') !== false) {
+                    $errMsg = "This video is age-restricted by YouTube. Please configure authenticated cookies in storage/app/cookies.txt to download age-gated videos.";
                 } elseif (stripos($detailedError, 'unavailable') !== false) {
                     $errMsg = "This video is unavailable or does not exist. Please check the link.";
                 } elseif (stripos($detailedError, 'private') !== false) {
                     $errMsg = "This video is private or restricted. Please enter a public video link.";
-                } elseif (stripos($detailedError, 'sign in') !== false || stripos($detailedError, 'age-restricted') !== false) {
-                    $errMsg = "This video requires YouTube sign-in or is age-restricted.";
+                } elseif (stripos($detailedError, 'members-only') !== false || stripos($detailedError, 'join this channel') !== false) {
+                    $errMsg = "This video is reserved for channel members only.";
+                } elseif (stripos($detailedError, 'live event') !== false || stripos($detailedError, 'is a live stream') !== false) {
+                    $errMsg = "Live streams cannot be downloaded until the stream has concluded.";
+                } elseif (stripos($detailedError, 'sign in') !== false || stripos($detailedError, 'login_required') !== false) {
+                    $errMsg = "This video requires YouTube sign-in. Please verify the URL is public or configure cookies in storage/app/cookies.txt.";
                 } elseif (stripos($detailedError, 'not a valid URL') !== false || stripos($detailedError, 'unsupported URL') !== false) {
                     $errMsg = "The provided link is not a recognized video URL.";
                 } elseif (stripos($detailedError, 'removed') !== false) {
