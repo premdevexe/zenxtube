@@ -35,17 +35,26 @@ class VideoDownloaderService
         }
 
         if ($isWindows) {
-            // Windows candidate paths (.exe prioritized)
+            // Windows candidate paths (.exe ONLY)
             $candidates = [
                 base_path("bin/{$name}.exe"),
                 base_path("{$name}.exe"),
-                base_path("bin/{$name}"),
-                base_path($name),
             ];
 
             foreach ($candidates as $cand) {
                 if (file_exists($cand)) {
                     return $cand;
+                }
+            }
+
+            // Check system PATH via 'where'
+            if (function_exists('shell_exec')) {
+                $whereOutput = trim((string)@shell_exec('where ' . escapeshellarg($name . '.exe') . ' 2>nul'));
+                if (!empty($whereOutput)) {
+                    $firstLine = explode("\n", str_replace("\r", "", $whereOutput))[0];
+                    if (file_exists($firstLine)) {
+                        return $firstLine;
+                    }
                 }
             }
 
@@ -133,7 +142,11 @@ class VideoDownloaderService
         }
 
         $isWindows = strtoupper(substr(PHP_OS, 0, 3)) === 'WIN';
-        if (!$isWindows) {
+        if ($isWindows) {
+            if (strtolower(substr($this->binaryPath, -4)) !== '.exe') {
+                return false;
+            }
+        } else {
             if (substr($this->binaryPath, -4) === '.exe') {
                 return false;
             }
@@ -237,8 +250,10 @@ class VideoDownloaderService
         if (!$playlistData || empty($playlistData['video'])) {
             $nativeExtractor = app(NativeMediaExtractorService::class);
             $playlistData = $nativeExtractor->getPlaylistInfo($url);
-            if (!$playlistData && empty($this->lastError)) {
-                $this->lastError = $nativeExtractor->getLastError();
+            if (!$playlistData) {
+                $this->lastError = $nativeExtractor->getLastError() ?: $this->lastError;
+            } else {
+                $this->lastError = null;
             }
         }
 
@@ -330,8 +345,10 @@ class VideoDownloaderService
         if (!$videoInfo || (empty($videoInfo['merged_options']) && empty($videoInfo['links']))) {
             $nativeExtractor = app(NativeMediaExtractorService::class);
             $videoInfo = $nativeExtractor->getVideoInfo($url);
-            if (!$videoInfo && empty($this->lastError)) {
-                $this->lastError = $nativeExtractor->getLastError();
+            if (!$videoInfo) {
+                $this->lastError = $nativeExtractor->getLastError() ?: $this->lastError;
+            } else {
+                $this->lastError = null;
             }
         }
 
